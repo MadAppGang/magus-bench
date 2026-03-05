@@ -1,0 +1,12 @@
+{
+  "test_id": "generate-default",
+  "model": "internal",
+  "started_at": "2026-03-05T21:58:12Z",
+  "completed_at": "2026-03-05T22:00:54Z",
+  "duration_seconds": 162,
+  "exit_code": 0,
+  "timeout_seconds": 600,
+  "claudish_flags": "-y --json --debug --log-level debug",
+  "prompt_file": "/Users/jack/mag/claude-code/research/tech-writer-eval/prompts/generate-default.md",
+  "framework_version": "1.0.0"
+}

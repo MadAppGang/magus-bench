@@ -1,0 +1,11 @@
+`★ Coaching ────────────────────────────────────`
+*Session 34d6434e...*
+
+1. Session files detected in /tmp/ -- these are cleared on reboot. Use persistent paths:
+  `ai-docs/sessions/{task-slug}-{timestamp}-{random}/` for research artifacts
+  `.claude/.coaching/` for plugin state
+  See: CLAUDE.md Session Directories section
+
+`─────────────────────────────────────────────────`
+
+{"scores":{"sample_a":{"slop":7,"writing_craft":8,"readability":7,"structure":9,"conciseness":6,"accuracy":9,"disclosure":7,"diagrams":7,"overall":8},"sample_b":{"slop":7,"writing_craft":8,"readability":9,"structure":6,"conciseness":9,"accuracy":9,"disclosure":8,"diagrams":1,"overall":7},"sample_c":{"slop":7,"writing_craft":7,"readability":7,"structure":8,"conciseness":8,"accuracy":7,"disclosure":8,"diagrams":7,"overall":7},"sample_d":{"slop":9,"writing_craft":9,"readability":9,"structure":9,"conciseness":9,"accuracy":8,"disclosure":9,"diagrams":9,"overall":9}},"ranking":["D","A","B","C"],"reasoning":"Sample D leads on nearly every criterion — zero detectable slop, punchy sentence variety ('Files are not.'), strong mermaid diagrams, and design-pattern guidance that adds genuine new value at the end rather than restating earlier content. Sample A is a solid second: comprehensive coverage and excellent structure, but 'powerful' appears twice, sections 7–8 repeat material already covered in section 6, and the quickstart is buried eight sections deep. Samples B and C are close: B wins narrowly on accuracy (2x weight) and conciseness, though its complete absence of diagrams (1/10) and flat heading structure hurt it; C has better diagrams and structure but weaker writing craft and accuracy, dragged down by the labeled-fictional TypeScript 'internal representation' code block."}

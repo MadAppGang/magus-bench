@@ -1,0 +1,1 @@
+API Error: 400 {"error":"{\"error\":{\"message\":\"qwen3.5-plus-02-15 is not a valid model ID\",\"code\":400},\"user_id\":\"user_2ttdVO7AMxHINklWKYPQEFGhCwj\"}"}

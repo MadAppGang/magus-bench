@@ -1,0 +1,1411 @@
+{
+  "run_dir": "research/tech-writer-eval/results/run-20260306-085812",
+  "analyzed_at": "2026-03-05T22:10:38.328Z",
+  "topic": "How skill injection works in the dev plugin's /dev:implement command",
+  "sample_mapping": {
+    "contestants": {
+      "A": "default",
+      "B": "techwriter",
+      "C": "reference",
+      "D": "gemini"
+    },
+    "judge_orderings": {
+      "internal": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "minimax": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "kimi": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "glm": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "gemini": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "gpt": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "qwen": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ]
+    },
+    "created_at": "2026-03-05T22:03:14Z"
+  },
+  "total_judges": 7,
+  "successful_judges": 6,
+  "failed_judges": [
+    "qwen"
+  ],
+  "criteria_results": [
+    {
+      "criterion_id": "slop",
+      "criterion_name": "AI Slop Absence",
+      "weight": 2,
+      "scores_by_approach": {
+        "default": [
+          7,
+          8,
+          3,
+          8,
+          8,
+          6
+        ],
+        "techwriter": [
+          9,
+          7,
+          4,
+          9,
+          9,
+          7
+        ],
+        "reference": [
+          7,
+          9,
+          9,
+          8,
+          7,
+          9
+        ],
+        "gemini": [
+          7,
+          8,
+          5,
+          5,
+          6,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 6.7,
+        "techwriter": 7.5,
+        "reference": 8.2,
+        "gemini": 6.5
+      },
+      "stddev_by_approach": {
+        "default": 2,
+        "techwriter": 2,
+        "reference": 1,
+        "gemini": 1.4
+      },
+      "min_by_approach": {
+        "default": 3,
+        "techwriter": 4,
+        "reference": 7,
+        "gemini": 5
+      },
+      "max_by_approach": {
+        "default": 8,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "writing_craft",
+      "criterion_name": "Writing Craft",
+      "weight": 2,
+      "scores_by_approach": {
+        "default": [
+          8,
+          8,
+          4,
+          9,
+          8,
+          7
+        ],
+        "techwriter": [
+          9,
+          7,
+          5,
+          9,
+          9,
+          8
+        ],
+        "reference": [
+          8,
+          8,
+          9,
+          7,
+          7,
+          8
+        ],
+        "gemini": [
+          7,
+          7,
+          5,
+          7,
+          7,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 7.3,
+        "techwriter": 7.8,
+        "reference": 7.8,
+        "gemini": 6.8
+      },
+      "stddev_by_approach": {
+        "default": 1.8,
+        "techwriter": 1.6,
+        "reference": 0.8,
+        "gemini": 1
+      },
+      "min_by_approach": {
+        "default": 4,
+        "techwriter": 5,
+        "reference": 7,
+        "gemini": 5
+      },
+      "max_by_approach": {
+        "default": 9,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "readability",
+      "criterion_name": "Readability",
+      "weight": 1.5,
+      "scores_by_approach": {
+        "default": [
+          7,
+          8,
+          4,
+          8,
+          8,
+          7
+        ],
+        "techwriter": [
+          9,
+          7,
+          6,
+          9,
+          9,
+          8
+        ],
+        "reference": [
+          9,
+          8,
+          9,
+          8,
+          8,
+          9
+        ],
+        "gemini": [
+          7,
+          8,
+          7,
+          8,
+          8,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 7,
+        "techwriter": 8,
+        "reference": 8.5,
+        "gemini": 7.7
+      },
+      "stddev_by_approach": {
+        "default": 1.5,
+        "techwriter": 1.3,
+        "reference": 0.5,
+        "gemini": 0.5
+      },
+      "min_by_approach": {
+        "default": 4,
+        "techwriter": 6,
+        "reference": 8,
+        "gemini": 7
+      },
+      "max_by_approach": {
+        "default": 8,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "structure",
+      "criterion_name": "Document Structure",
+      "weight": 1.5,
+      "scores_by_approach": {
+        "default": [
+          9,
+          9,
+          6,
+          10,
+          9,
+          9
+        ],
+        "techwriter": [
+          9,
+          7,
+          7,
+          9,
+          9,
+          9
+        ],
+        "reference": [
+          6,
+          8,
+          9,
+          7,
+          8,
+          8
+        ],
+        "gemini": [
+          8,
+          7,
+          6,
+          8,
+          8,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 8.7,
+        "techwriter": 8.3,
+        "reference": 7.7,
+        "gemini": 7.5
+      },
+      "stddev_by_approach": {
+        "default": 1.4,
+        "techwriter": 1,
+        "reference": 1,
+        "gemini": 0.8
+      },
+      "min_by_approach": {
+        "default": 6,
+        "techwriter": 7,
+        "reference": 6,
+        "gemini": 6
+      },
+      "max_by_approach": {
+        "default": 10,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "conciseness",
+      "criterion_name": "Conciseness",
+      "weight": 1,
+      "scores_by_approach": {
+        "default": [
+          6,
+          7,
+          3,
+          6,
+          7,
+          5
+        ],
+        "techwriter": [
+          9,
+          6,
+          4,
+          9,
+          9,
+          7
+        ],
+        "reference": [
+          9,
+          9,
+          9,
+          8,
+          8,
+          8
+        ],
+        "gemini": [
+          8,
+          8,
+          5,
+          7,
+          8,
+          7
+        ]
+      },
+      "mean_by_approach": {
+        "default": 5.7,
+        "techwriter": 7.3,
+        "reference": 8.5,
+        "gemini": 7.2
+      },
+      "stddev_by_approach": {
+        "default": 1.5,
+        "techwriter": 2.1,
+        "reference": 0.5,
+        "gemini": 1.2
+      },
+      "min_by_approach": {
+        "default": 3,
+        "techwriter": 4,
+        "reference": 8,
+        "gemini": 5
+      },
+      "max_by_approach": {
+        "default": 7,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "accuracy",
+      "criterion_name": "Internal Consistency",
+      "weight": 2,
+      "scores_by_approach": {
+        "default": [
+          9,
+          8,
+          7,
+          10,
+          9,
+          6
+        ],
+        "techwriter": [
+          8,
+          8,
+          7,
+          9,
+          9,
+          7
+        ],
+        "reference": [
+          9,
+          8,
+          9,
+          9,
+          9,
+          9
+        ],
+        "gemini": [
+          7,
+          7,
+          7,
+          8,
+          9,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 8.2,
+        "techwriter": 8,
+        "reference": 8.8,
+        "gemini": 7.7
+      },
+      "stddev_by_approach": {
+        "default": 1.5,
+        "techwriter": 0.9,
+        "reference": 0.4,
+        "gemini": 0.8
+      },
+      "min_by_approach": {
+        "default": 6,
+        "techwriter": 7,
+        "reference": 8,
+        "gemini": 7
+      },
+      "max_by_approach": {
+        "default": 10,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 9
+      }
+    },
+    {
+      "criterion_id": "disclosure",
+      "criterion_name": "Progressive Disclosure",
+      "weight": 1,
+      "scores_by_approach": {
+        "default": [
+          7,
+          8,
+          4,
+          9,
+          9,
+          9
+        ],
+        "techwriter": [
+          9,
+          7,
+          5,
+          9,
+          9,
+          9
+        ],
+        "reference": [
+          8,
+          7,
+          8,
+          7,
+          7,
+          8
+        ],
+        "gemini": [
+          8,
+          6,
+          6,
+          8,
+          7,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 7.7,
+        "techwriter": 8,
+        "reference": 7.5,
+        "gemini": 7.2
+      },
+      "stddev_by_approach": {
+        "default": 2,
+        "techwriter": 1.7,
+        "reference": 0.5,
+        "gemini": 1
+      },
+      "min_by_approach": {
+        "default": 4,
+        "techwriter": 5,
+        "reference": 7,
+        "gemini": 6
+      },
+      "max_by_approach": {
+        "default": 9,
+        "techwriter": 9,
+        "reference": 8,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "diagrams",
+      "criterion_name": "Diagram Quality",
+      "weight": 1,
+      "scores_by_approach": {
+        "default": [
+          7,
+          7,
+          3,
+          7,
+          9,
+          8
+        ],
+        "techwriter": [
+          9,
+          8,
+          7,
+          9,
+          9,
+          8
+        ],
+        "reference": [
+          1,
+          7,
+          5,
+          5,
+          1,
+          1
+        ],
+        "gemini": [
+          7,
+          6,
+          6,
+          7,
+          8,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 6.8,
+        "techwriter": 8.3,
+        "reference": 3.3,
+        "gemini": 7
+      },
+      "stddev_by_approach": {
+        "default": 2,
+        "techwriter": 0.8,
+        "reference": 2.7,
+        "gemini": 0.9
+      },
+      "min_by_approach": {
+        "default": 3,
+        "techwriter": 7,
+        "reference": 1,
+        "gemini": 6
+      },
+      "max_by_approach": {
+        "default": 9,
+        "techwriter": 9,
+        "reference": 7,
+        "gemini": 8
+      }
+    },
+    {
+      "criterion_id": "overall",
+      "criterion_name": "Overall Quality",
+      "weight": 2,
+      "scores_by_approach": {
+        "default": [
+          8,
+          8,
+          4,
+          9,
+          8,
+          7
+        ],
+        "techwriter": [
+          9,
+          7,
+          5,
+          9,
+          9,
+          8
+        ],
+        "reference": [
+          7,
+          8,
+          9,
+          7,
+          6,
+          7
+        ],
+        "gemini": [
+          7,
+          7,
+          6,
+          6,
+          7,
+          8
+        ]
+      },
+      "mean_by_approach": {
+        "default": 7.3,
+        "techwriter": 7.8,
+        "reference": 7.3,
+        "gemini": 6.8
+      },
+      "stddev_by_approach": {
+        "default": 1.8,
+        "techwriter": 1.6,
+        "reference": 1,
+        "gemini": 0.8
+      },
+      "min_by_approach": {
+        "default": 4,
+        "techwriter": 5,
+        "reference": 6,
+        "gemini": 6
+      },
+      "max_by_approach": {
+        "default": 9,
+        "techwriter": 9,
+        "reference": 9,
+        "gemini": 8
+      }
+    }
+  ],
+  "weighted_scores": {
+    "default": 7.3,
+    "techwriter": 7.9,
+    "reference": 7.7,
+    "gemini": 7.1
+  },
+  "borda_counts": {
+    "techwriter": 14,
+    "default": 9,
+    "reference": 8,
+    "gemini": 5
+  },
+  "absolute_ranking": [
+    "techwriter",
+    "default",
+    "reference",
+    "gemini"
+  ],
+  "ai_only_ranking": [
+    "techwriter",
+    "default",
+    "gemini"
+  ],
+  "reference_calibration": {
+    "reference_weighted_score": 7.7,
+    "reference_borda": 8,
+    "ai_gap": {
+      "default": -0.4,
+      "techwriter": 0.2,
+      "gemini": -0.6
+    }
+  },
+  "statistical_tests": {
+    "friedman_statistic": 1.4,
+    "friedman_p": 0.71,
+    "wilcoxon_pairwise": {
+      "default_vs_techwriter": 0.72,
+      "default_vs_reference": 1,
+      "default_vs_gemini": 1,
+      "techwriter_vs_reference": 1,
+      "techwriter_vs_gemini": 1,
+      "reference_vs_gemini": 1
+    },
+    "bootstrap_ci": {
+      "default": [
+        6.07,
+        8.31
+      ],
+      "techwriter": [
+        6.83,
+        8.78
+      ],
+      "reference": [
+        7.29,
+        8.17
+      ],
+      "gemini": [
+        6.57,
+        7.56
+      ]
+    },
+    "significance_note": "With 6 judges, results are directional. Deltas under ~0.8 points are within measurement noise at typical inter-judge variance (sigma ~0.9). Wilcoxon p-values are Bonferroni corrected for 6 pairs."
+  },
+  "judge_details": [
+    {
+      "judge_id": "internal",
+      "model": "internal",
+      "ordering": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "raw_scores": {
+        "scores": {
+          "sample_a": {
+            "slop": 7,
+            "writing_craft": 8,
+            "readability": 7,
+            "structure": 9,
+            "conciseness": 6,
+            "accuracy": 9,
+            "disclosure": 7,
+            "diagrams": 7,
+            "overall": 8
+          },
+          "sample_b": {
+            "slop": 7,
+            "writing_craft": 8,
+            "readability": 9,
+            "structure": 6,
+            "conciseness": 9,
+            "accuracy": 9,
+            "disclosure": 8,
+            "diagrams": 1,
+            "overall": 7
+          },
+          "sample_c": {
+            "slop": 7,
+            "writing_craft": 7,
+            "readability": 7,
+            "structure": 8,
+            "conciseness": 8,
+            "accuracy": 7,
+            "disclosure": 8,
+            "diagrams": 7,
+            "overall": 7
+          },
+          "sample_d": {
+            "slop": 9,
+            "writing_craft": 9,
+            "readability": 9,
+            "structure": 9,
+            "conciseness": 9,
+            "accuracy": 8,
+            "disclosure": 9,
+            "diagrams": 9,
+            "overall": 9
+          }
+        },
+        "ranking": [
+          "D",
+          "A",
+          "B",
+          "C"
+        ],
+        "reasoning": "Sample D leads on nearly every criterion — zero detectable slop, punchy sentence variety ('Files are not.'), strong mermaid diagrams, and design-pattern guidance that adds genuine new value at the end rather than restating earlier content. Sample A is a solid second: comprehensive coverage and excellent structure, but 'powerful' appears twice, sections 7–8 repeat material already covered in section 6, and the quickstart is buried eight sections deep. Samples B and C are close: B wins narrowly on accuracy (2x weight) and conciseness, though its complete absence of diagrams (1/10) and flat heading structure hurt it; C has better diagrams and structure but weaker writing craft and accuracy, dragged down by the labeled-fictional TypeScript 'internal representation' code block."
+      },
+      "deblinded_scores": {
+        "default": {
+          "slop": 7,
+          "writing_craft": 8,
+          "readability": 7,
+          "structure": 9,
+          "conciseness": 6,
+          "accuracy": 9,
+          "disclosure": 7,
+          "diagrams": 7,
+          "overall": 8
+        },
+        "reference": {
+          "slop": 7,
+          "writing_craft": 8,
+          "readability": 9,
+          "structure": 6,
+          "conciseness": 9,
+          "accuracy": 9,
+          "disclosure": 8,
+          "diagrams": 1,
+          "overall": 7
+        },
+        "gemini": {
+          "slop": 7,
+          "writing_craft": 7,
+          "readability": 7,
+          "structure": 8,
+          "conciseness": 8,
+          "accuracy": 7,
+          "disclosure": 8,
+          "diagrams": 7,
+          "overall": 7
+        },
+        "techwriter": {
+          "slop": 9,
+          "writing_craft": 9,
+          "readability": 9,
+          "structure": 9,
+          "conciseness": 9,
+          "accuracy": 8,
+          "disclosure": 9,
+          "diagrams": 9,
+          "overall": 9
+        }
+      },
+      "ranking_deblinded": [
+        "techwriter",
+        "default",
+        "reference",
+        "gemini"
+      ],
+      "parse_method": "json",
+      "raw_response_length": 1773
+    },
+    {
+      "judge_id": "minimax",
+      "model": "minimax-m2.5",
+      "ordering": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "raw_scores": {
+        "scores": {
+          "sample_a": {
+            "slop": 8,
+            "writing_craft": 8,
+            "readability": 8,
+            "structure": 9,
+            "conciseness": 7,
+            "accuracy": 8,
+            "disclosure": 8,
+            "diagrams": 7,
+            "overall": 8
+          },
+          "sample_b": {
+            "slop": 9,
+            "writing_craft": 8,
+            "readability": 8,
+            "structure": 8,
+            "conciseness": 9,
+            "accuracy": 8,
+            "disclosure": 7,
+            "diagrams": 7,
+            "overall": 8
+          },
+          "sample_c": {
+            "slop": 7,
+            "writing_craft": 7,
+            "readability": 7,
+            "structure": 7,
+            "conciseness": 6,
+            "accuracy": 8,
+            "disclosure": 7,
+            "diagrams": 8,
+            "overall": 7
+          },
+          "sample_d": {
+            "slop": 8,
+            "writing_craft": 7,
+            "readability": 8,
+            "structure": 7,
+            "conciseness": 8,
+            "accuracy": 7,
+            "disclosure": 6,
+            "diagrams": 6,
+            "overall": 7
+          }
+        },
+        "ranking": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "reasoning": "Sample A ranks highest due to superior structure with clear metadata, logical progression from basics to advanced, and comprehensive coverage including debugging section. Sample B is a close second - extremely concise and well-crafted technical writing with minimal slop, though less comprehensive than A. Sample C covers similar ground to A but with more repetitive phrasing and occasional conversational filler. Sample D is the most concise but sacrifices depth and progressive disclosure for brevity."
+      },
+      "deblinded_scores": {
+        "default": {
+          "slop": 8,
+          "writing_craft": 8,
+          "readability": 8,
+          "structure": 9,
+          "conciseness": 7,
+          "accuracy": 8,
+          "disclosure": 8,
+          "diagrams": 7,
+          "overall": 8
+        },
+        "reference": {
+          "slop": 9,
+          "writing_craft": 8,
+          "readability": 8,
+          "structure": 8,
+          "conciseness": 9,
+          "accuracy": 8,
+          "disclosure": 7,
+          "diagrams": 7,
+          "overall": 8
+        },
+        "techwriter": {
+          "slop": 7,
+          "writing_craft": 7,
+          "readability": 7,
+          "structure": 7,
+          "conciseness": 6,
+          "accuracy": 8,
+          "disclosure": 7,
+          "diagrams": 8,
+          "overall": 7
+        },
+        "gemini": {
+          "slop": 8,
+          "writing_craft": 7,
+          "readability": 8,
+          "structure": 7,
+          "conciseness": 8,
+          "accuracy": 7,
+          "disclosure": 6,
+          "diagrams": 6,
+          "overall": 7
+        }
+      },
+      "ranking_deblinded": [
+        "default",
+        "reference",
+        "techwriter",
+        "gemini"
+      ],
+      "parse_method": "json",
+      "raw_response_length": 1114
+    },
+    {
+      "judge_id": "kimi",
+      "model": "kimi-k2.5",
+      "ordering": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "raw_scores": {
+        "scores": {
+          "sample_a": {
+            "slop": 5,
+            "writing_craft": 5,
+            "readability": 7,
+            "structure": 6,
+            "conciseness": 5,
+            "accuracy": 7,
+            "disclosure": 6,
+            "diagrams": 6,
+            "overall": 6
+          },
+          "sample_b": {
+            "slop": 4,
+            "writing_craft": 5,
+            "readability": 6,
+            "structure": 7,
+            "conciseness": 4,
+            "accuracy": 7,
+            "disclosure": 5,
+            "diagrams": 7,
+            "overall": 5
+          },
+          "sample_c": {
+            "slop": 3,
+            "writing_craft": 4,
+            "readability": 4,
+            "structure": 6,
+            "conciseness": 3,
+            "accuracy": 7,
+            "disclosure": 4,
+            "diagrams": 3,
+            "overall": 4
+          },
+          "sample_d": {
+            "slop": 9,
+            "writing_craft": 9,
+            "readability": 9,
+            "structure": 9,
+            "conciseness": 9,
+            "accuracy": 9,
+            "disclosure": 8,
+            "diagrams": 5,
+            "overall": 9
+          }
+        },
+        "ranking": [
+          "D",
+          "A",
+          "B",
+          "C"
+        ],
+        "reasoning": "Sample D is clearly professional human-written documentation (Microsoft VS Code docs) with natural sentence variation, direct voice, no marketing fluff, and efficient information delivery. Samples A-C show AI-generation patterns: Sample A has moderate slop with some marketing language and symmetric structures; Sample B is overly verbose with formulaic sections and excessive diagrams; Sample C is the worst offender with extreme bloat (10,000+ words), extensive throat-clearing, uniform mechanical structure, and burying essential information under layers of meta-commentary."
+      },
+      "deblinded_scores": {
+        "gemini": {
+          "slop": 5,
+          "writing_craft": 5,
+          "readability": 7,
+          "structure": 6,
+          "conciseness": 5,
+          "accuracy": 7,
+          "disclosure": 6,
+          "diagrams": 6,
+          "overall": 6
+        },
+        "techwriter": {
+          "slop": 4,
+          "writing_craft": 5,
+          "readability": 6,
+          "structure": 7,
+          "conciseness": 4,
+          "accuracy": 7,
+          "disclosure": 5,
+          "diagrams": 7,
+          "overall": 5
+        },
+        "default": {
+          "slop": 3,
+          "writing_craft": 4,
+          "readability": 4,
+          "structure": 6,
+          "conciseness": 3,
+          "accuracy": 7,
+          "disclosure": 4,
+          "diagrams": 3,
+          "overall": 4
+        },
+        "reference": {
+          "slop": 9,
+          "writing_craft": 9,
+          "readability": 9,
+          "structure": 9,
+          "conciseness": 9,
+          "accuracy": 9,
+          "disclosure": 8,
+          "diagrams": 5,
+          "overall": 9
+        }
+      },
+      "ranking_deblinded": [
+        "reference",
+        "gemini",
+        "techwriter",
+        "default"
+      ],
+      "parse_method": "fenced_json",
+      "raw_response_length": 1551
+    },
+    {
+      "judge_id": "glm",
+      "model": "glm-5",
+      "ordering": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "raw_scores": {
+        "scores": {
+          "sample_a": {
+            "slop": 9,
+            "writing_craft": 9,
+            "readability": 9,
+            "structure": 9,
+            "conciseness": 9,
+            "accuracy": 9,
+            "disclosure": 9,
+            "diagrams": 9,
+            "overall": 9
+          },
+          "sample_b": {
+            "slop": 8,
+            "writing_craft": 7,
+            "readability": 8,
+            "structure": 7,
+            "conciseness": 8,
+            "accuracy": 9,
+            "disclosure": 7,
+            "diagrams": 5,
+            "overall": 7
+          },
+          "sample_c": {
+            "slop": 5,
+            "writing_craft": 7,
+            "readability": 8,
+            "structure": 8,
+            "conciseness": 7,
+            "accuracy": 8,
+            "disclosure": 8,
+            "diagrams": 7,
+            "overall": 6
+          },
+          "sample_d": {
+            "slop": 8,
+            "writing_craft": 9,
+            "readability": 8,
+            "structure": 10,
+            "conciseness": 6,
+            "accuracy": 10,
+            "disclosure": 9,
+            "diagrams": 7,
+            "overall": 9
+          }
+        },
+        "ranking": [
+          "A",
+          "D",
+          "B",
+          "C"
+        ],
+        "reasoning": "A achieves the best balance of conciseness, craft, and visual aids with excellent Mermaid diagrams and skip-link navigation. D is an outstanding comprehensive reference with perfect structure but sacrifices conciseness for depth. B is solid official documentation but lacks diagrams beyond a file tree. C's '★ Insight' block is an AI-generated pattern that reveals its origin, and the corporate jargon ('leverages') further signals machine authorship."
+      },
+      "deblinded_scores": {
+        "techwriter": {
+          "slop": 9,
+          "writing_craft": 9,
+          "readability": 9,
+          "structure": 9,
+          "conciseness": 9,
+          "accuracy": 9,
+          "disclosure": 9,
+          "diagrams": 9,
+          "overall": 9
+        },
+        "reference": {
+          "slop": 8,
+          "writing_craft": 7,
+          "readability": 8,
+          "structure": 7,
+          "conciseness": 8,
+          "accuracy": 9,
+          "disclosure": 7,
+          "diagrams": 5,
+          "overall": 7
+        },
+        "gemini": {
+          "slop": 5,
+          "writing_craft": 7,
+          "readability": 8,
+          "structure": 8,
+          "conciseness": 7,
+          "accuracy": 8,
+          "disclosure": 8,
+          "diagrams": 7,
+          "overall": 6
+        },
+        "default": {
+          "slop": 8,
+          "writing_craft": 9,
+          "readability": 8,
+          "structure": 10,
+          "conciseness": 6,
+          "accuracy": 10,
+          "disclosure": 9,
+          "diagrams": 7,
+          "overall": 9
+        }
+      },
+      "ranking_deblinded": [
+        "techwriter",
+        "default",
+        "reference",
+        "gemini"
+      ],
+      "parse_method": "json",
+      "raw_response_length": 1064
+    },
+    {
+      "judge_id": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "ordering": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "raw_scores": {
+        "scores": {
+          "sample_a": {
+            "slop": 9,
+            "writing_craft": 9,
+            "readability": 9,
+            "structure": 9,
+            "conciseness": 9,
+            "accuracy": 9,
+            "disclosure": 9,
+            "diagrams": 9,
+            "overall": 9
+          },
+          "sample_b": {
+            "slop": 8,
+            "writing_craft": 8,
+            "readability": 8,
+            "structure": 9,
+            "conciseness": 7,
+            "accuracy": 9,
+            "disclosure": 9,
+            "diagrams": 9,
+            "overall": 8
+          },
+          "sample_c": {
+            "slop": 6,
+            "writing_craft": 7,
+            "readability": 8,
+            "structure": 8,
+            "conciseness": 8,
+            "accuracy": 9,
+            "disclosure": 7,
+            "diagrams": 8,
+            "overall": 7
+          },
+          "sample_d": {
+            "slop": 7,
+            "writing_craft": 7,
+            "readability": 8,
+            "structure": 8,
+            "conciseness": 8,
+            "accuracy": 9,
+            "disclosure": 7,
+            "diagrams": 1,
+            "overall": 6
+          }
+        },
+        "ranking": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "reasoning": "Sample A is the strongest, featuring high information density, direct language devoid of AI slop, and excellent use of diagrams. Sample B is also very comprehensive and well-structured but slightly more verbose. Sample C suffers from overt AI formatting artifacts (the insight block) and formulaic structure. Sample D reads like standard corporate documentation with some conversational throat-clearing and entirely lacks diagrams, placing it last."
+      },
+      "deblinded_scores": {
+        "techwriter": {
+          "slop": 9,
+          "writing_craft": 9,
+          "readability": 9,
+          "structure": 9,
+          "conciseness": 9,
+          "accuracy": 9,
+          "disclosure": 9,
+          "diagrams": 9,
+          "overall": 9
+        },
+        "default": {
+          "slop": 8,
+          "writing_craft": 8,
+          "readability": 8,
+          "structure": 9,
+          "conciseness": 7,
+          "accuracy": 9,
+          "disclosure": 9,
+          "diagrams": 9,
+          "overall": 8
+        },
+        "gemini": {
+          "slop": 6,
+          "writing_craft": 7,
+          "readability": 8,
+          "structure": 8,
+          "conciseness": 8,
+          "accuracy": 9,
+          "disclosure": 7,
+          "diagrams": 8,
+          "overall": 7
+        },
+        "reference": {
+          "slop": 7,
+          "writing_craft": 7,
+          "readability": 8,
+          "structure": 8,
+          "conciseness": 8,
+          "accuracy": 9,
+          "disclosure": 7,
+          "diagrams": 1,
+          "overall": 6
+        }
+      },
+      "ranking_deblinded": [
+        "techwriter",
+        "default",
+        "gemini",
+        "reference"
+      ],
+      "parse_method": "json",
+      "raw_response_length": 1430
+    },
+    {
+      "judge_id": "gpt",
+      "model": "gpt-5.3-codex",
+      "ordering": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "raw_scores": {
+        "scores": {
+          "sample_a": {
+            "slop": 8,
+            "writing_craft": 8,
+            "readability": 8,
+            "structure": 8,
+            "conciseness": 7,
+            "accuracy": 8,
+            "disclosure": 8,
+            "diagrams": 8,
+            "overall": 8
+          },
+          "sample_b": {
+            "slop": 9,
+            "writing_craft": 8,
+            "readability": 9,
+            "structure": 8,
+            "conciseness": 8,
+            "accuracy": 9,
+            "disclosure": 8,
+            "diagrams": 1,
+            "overall": 7
+          },
+          "sample_c": {
+            "slop": 6,
+            "writing_craft": 7,
+            "readability": 7,
+            "structure": 9,
+            "conciseness": 5,
+            "accuracy": 6,
+            "disclosure": 9,
+            "diagrams": 8,
+            "overall": 7
+          },
+          "sample_d": {
+            "slop": 7,
+            "writing_craft": 8,
+            "readability": 8,
+            "structure": 9,
+            "conciseness": 7,
+            "accuracy": 7,
+            "disclosure": 9,
+            "diagrams": 8,
+            "overall": 8
+          }
+        },
+        "ranking": [
+          "D",
+          "A",
+          "B",
+          "C"
+        ],
+        "reasoning": "D is the strongest blend of practical structure, progressive disclosure, and useful flow diagrams with relatively controlled verbosity. A is clear and usable with good examples and diagrams but includes a few speculative/internal claims and minor padding. B is clean, readable, and highly consistent but scores lower overall due to no diagrams and narrower conceptual depth for this benchmark, while C is comprehensive but overlong, repetitive, and internally shakier in places."
+      },
+      "deblinded_scores": {
+        "gemini": {
+          "slop": 8,
+          "writing_craft": 8,
+          "readability": 8,
+          "structure": 8,
+          "conciseness": 7,
+          "accuracy": 8,
+          "disclosure": 8,
+          "diagrams": 8,
+          "overall": 8
+        },
+        "reference": {
+          "slop": 9,
+          "writing_craft": 8,
+          "readability": 9,
+          "structure": 8,
+          "conciseness": 8,
+          "accuracy": 9,
+          "disclosure": 8,
+          "diagrams": 1,
+          "overall": 7
+        },
+        "default": {
+          "slop": 6,
+          "writing_craft": 7,
+          "readability": 7,
+          "structure": 9,
+          "conciseness": 5,
+          "accuracy": 6,
+          "disclosure": 9,
+          "diagrams": 8,
+          "overall": 7
+        },
+        "techwriter": {
+          "slop": 7,
+          "writing_craft": 8,
+          "readability": 8,
+          "structure": 9,
+          "conciseness": 7,
+          "accuracy": 7,
+          "disclosure": 9,
+          "diagrams": 8,
+          "overall": 8
+        }
+      },
+      "ranking_deblinded": [
+        "techwriter",
+        "gemini",
+        "reference",
+        "default"
+      ],
+      "parse_method": "json",
+      "raw_response_length": 1440
+    }
+  ]
+}

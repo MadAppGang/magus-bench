@@ -1,0 +1,55 @@
+{
+  "scores": {
+    "sample_a": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 9,
+      "structure": 9,
+      "conciseness": 9,
+      "accuracy": 9,
+      "disclosure": 9,
+      "diagrams": 9,
+      "overall": 9
+    },
+    "sample_b": {
+      "slop": 8,
+      "writing_craft": 8,
+      "readability": 8,
+      "structure": 9,
+      "conciseness": 7,
+      "accuracy": 9,
+      "disclosure": 9,
+      "diagrams": 9,
+      "overall": 8
+    },
+    "sample_c": {
+      "slop": 6,
+      "writing_craft": 7,
+      "readability": 8,
+      "structure": 8,
+      "conciseness": 8,
+      "accuracy": 9,
+      "disclosure": 7,
+      "diagrams": 8,
+      "overall": 7
+    },
+    "sample_d": {
+      "slop": 7,
+      "writing_craft": 7,
+      "readability": 8,
+      "structure": 8,
+      "conciseness": 8,
+      "accuracy": 9,
+      "disclosure": 7,
+      "diagrams": 1,
+      "overall": 6
+    }
+  },
+  "ranking": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "reasoning": "Sample A is the strongest, featuring high information density, direct language devoid of AI slop, and excellent use of diagrams. Sample B is also very comprehensive and well-structured but slightly more verbose. Sample C suffers from overt AI formatting artifacts (the insight block) and formulaic structure. Sample D reads like standard corporate documentation with some conversational throat-clearing and entirely lacks diagrams, placing it last."
+}

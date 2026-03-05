@@ -1,0 +1,3 @@
+# Transient files from active runs
+*.pid
+*.tmp

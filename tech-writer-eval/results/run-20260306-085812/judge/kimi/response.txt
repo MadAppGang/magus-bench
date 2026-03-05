@@ -1,0 +1,52 @@
+```json
+{
+  "scores": {
+    "sample_a": {
+      "slop": 5,
+      "writing_craft": 5,
+      "readability": 7,
+      "structure": 6,
+      "conciseness": 5,
+      "accuracy": 7,
+      "disclosure": 6,
+      "diagrams": 6,
+      "overall": 6
+    },
+    "sample_b": {
+      "slop": 4,
+      "writing_craft": 5,
+      "readability": 6,
+      "structure": 7,
+      "conciseness": 4,
+      "accuracy": 7,
+      "disclosure": 5,
+      "diagrams": 7,
+      "overall": 5
+    },
+    "sample_c": {
+      "slop": 3,
+      "writing_craft": 4,
+      "readability": 4,
+      "structure": 6,
+      "conciseness": 3,
+      "accuracy": 7,
+      "disclosure": 4,
+      "diagrams": 3,
+      "overall": 4
+    },
+    "sample_d": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 9,
+      "structure": 9,
+      "conciseness": 9,
+      "accuracy": 9,
+      "disclosure": 8,
+      "diagrams": 5,
+      "overall": 9
+    }
+  },
+  "ranking": ["D", "A", "B", "C"],
+  "reasoning": "Sample D is clearly professional human-written documentation (Microsoft VS Code docs) with natural sentence variation, direct voice, no marketing fluff, and efficient information delivery. Samples A-C show AI-generation patterns: Sample A has moderate slop with some marketing language and symmetric structures; Sample B is overly verbose with formulaic sections and excessive diagrams; Sample C is the worst offender with extreme bloat (10,000+ words), extensive throat-clearing, uniform mechanical structure, and burying essential information under layers of meta-commentary."
+}
+```

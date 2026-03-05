@@ -1,0 +1,50 @@
+{
+  "scores": {
+    "sample_a": {
+      "slop": 8,
+      "writing_craft": 8,
+      "readability": 8,
+      "structure": 8,
+      "conciseness": 7,
+      "accuracy": 8,
+      "disclosure": 8,
+      "diagrams": 8,
+      "overall": 8
+    },
+    "sample_b": {
+      "slop": 9,
+      "writing_craft": 8,
+      "readability": 9,
+      "structure": 8,
+      "conciseness": 8,
+      "accuracy": 9,
+      "disclosure": 8,
+      "diagrams": 1,
+      "overall": 7
+    },
+    "sample_c": {
+      "slop": 6,
+      "writing_craft": 7,
+      "readability": 7,
+      "structure": 9,
+      "conciseness": 5,
+      "accuracy": 6,
+      "disclosure": 9,
+      "diagrams": 8,
+      "overall": 7
+    },
+    "sample_d": {
+      "slop": 7,
+      "writing_craft": 8,
+      "readability": 8,
+      "structure": 9,
+      "conciseness": 7,
+      "accuracy": 7,
+      "disclosure": 9,
+      "diagrams": 8,
+      "overall": 8
+    }
+  },
+  "ranking": ["D", "A", "B", "C"],
+  "reasoning": "D is the strongest blend of practical structure, progressive disclosure, and useful flow diagrams with relatively controlled verbosity. A is clear and usable with good examples and diagrams but includes a few speculative/internal claims and minor padding. B is clean, readable, and highly consistent but scores lower overall due to no diagrams and narrower conceptual depth for this benchmark, while C is comprehensive but overlong, repetitive, and internally shakier in places."
+}

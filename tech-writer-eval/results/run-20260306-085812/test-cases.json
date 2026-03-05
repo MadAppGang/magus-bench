@@ -1,0 +1,150 @@
+{
+  "meta": {
+    "description": "4-way reference-based doc quality benchmark. Compares human reference vs 3 AI approaches.",
+    "version": "1.0.0",
+    "created": "2026-03-05",
+    "type": "reference-quality-comparison",
+    "notes": "v1.0: 4-way blind comparison with per-judge independent randomization. Extends autotest/tech-writer/ 2-way benchmark. Uses Borda count + weighted scores + two-table reporting."
+  },
+  "topic": {
+    "title": "How skill injection works in the dev plugin's /dev:implement command",
+    "context": "Real codebase topic from the Magus plugin ecosystem. Covers: skill file discovery (SKILL.md), frontmatter parsing, Skill tool invocation, content injection into conversation context, and how the implement command chains brainstorming → planning → execution skills. Complex enough to require diagrams and progressive disclosure."
+  },
+  "approaches": ["default", "techwriter", "reference", "gemini"],
+  "generation": {
+    "internal_model": "internal",
+    "gemini_model": "google/gemini-3-flash-preview",
+    "timeout": 600,
+    "approach_configs": {
+      "default": {
+        "prompt_file": "prompts/generate-default.md",
+        "description": "Vanilla documentation prompt with no style rules"
+      },
+      "techwriter": {
+        "prompt_file": "prompts/generate-techwriter.md",
+        "description": "Anti-slop rules + Diátaxis template + readability constraints"
+      },
+      "gemini": {
+        "prompt_file": "prompts/generate-techwriter.md",
+        "description": "Gemini Flash using the same anti-slop prompt as techwriter",
+        "strip_coaching_prefix": true
+      },
+      "reference": {
+        "source_file": "reference/reference.md",
+        "description": "Human-written reference document (VS Code Extension Anatomy, CC BY 4.0)"
+      }
+    }
+  },
+  "evaluation": {
+    "criteria": [
+      {
+        "id": "slop",
+        "name": "AI Slop Absence",
+        "weight": 2.0,
+        "description": "Absence of AI writing artifacts at word, structural, and pattern levels. Check THREE levels: (1) WORD-LEVEL: marketing superlatives (amazing, powerful, robust, seamless, cutting-edge), difficulty dismissers (simply, just, easy, obviously), corporate jargon (leverage, utilize, streamline, facilitate), hedge phrases (it is worth noting, in order to), AI preambles (I'd be happy to, Great question, Let me explain). (2) STRUCTURAL-LEVEL: uniform sentence lengths, every paragraph following topic-sentence→supports→conclusion template, every list having exactly 3 or 5 items, uniform section lengths, predictable transition-word openers. (3) PATTERN-LEVEL: throat-clearing openings, hedging cascades, formulaic conclusions that restate what was said. A score of 10 means zero slop at any level."
+      },
+      {
+        "id": "writing_craft",
+        "name": "Writing Craft",
+        "weight": 2.0,
+        "description": "Sentence variety (mix of lengths, not uniform). Voice clarity (active > passive, precise verbs, not vague nouns). Structural confidence (no hedging cascades). Applies equally to human and AI text. Score 10 = reads like a skilled professional writer. Does not penalize correct technical vocabulary or domain-appropriate formality."
+      },
+      {
+        "id": "readability",
+        "name": "Readability",
+        "weight": 1.5,
+        "description": "Short sentences (<25 words average), minimal passive voice (<10%), scannable paragraphs (<100 words), second-person address for instructions. Grade level should be accessible (Flesch-Kincaid < 12)."
+      },
+      {
+        "id": "structure",
+        "name": "Document Structure",
+        "weight": 1.5,
+        "description": "Logical heading hierarchy (H1 → H2 → H3, no skipping), metadata header (title, description, audience), clear section ordering (overview → quickstart → details → reference), table of contents for long docs."
+      },
+      {
+        "id": "conciseness",
+        "name": "Conciseness",
+        "weight": 1.0,
+        "description": "No filler paragraphs, high information density, no repetition of the same point in different words. Every sentence adds new information."
+      },
+      {
+        "id": "accuracy",
+        "name": "Internal Consistency",
+        "weight": 2.0,
+        "description": "Correct and internally consistent technical claims. No contradictions within the document, no hallucinated parameters or APIs, no claims that contradict each other across sections. Does NOT require you to verify against any external system — score based on internal coherence only. A document that is internally consistent scores well even if you cannot independently verify the technical claims."
+      },
+      {
+        "id": "disclosure",
+        "name": "Progressive Disclosure",
+        "weight": 1.0,
+        "description": "Essential information first, details progressively deeper. Uses collapsible sections, layered examples (basic → advanced), clear separation between must-know and nice-to-know."
+      },
+      {
+        "id": "diagrams",
+        "name": "Diagram Quality",
+        "weight": 1.0,
+        "description": "Useful diagrams that aid understanding, correctly labeled, appropriate type for the content. Format-agnostic: Mermaid, SVG, PNG, ASCII all valid if the diagram serves its purpose. Score 1 if no diagrams present, or if diagrams are decorative rather than informative."
+      },
+      {
+        "id": "overall",
+        "name": "Overall Quality",
+        "weight": 2.0,
+        "description": "Holistic quality judgment. Would you publish this documentation as-is? Does it serve the reader's needs? Is it professional and trustworthy?"
+      }
+    ],
+    "total_weight": 14.0,
+    "score_range": {
+      "min": 1,
+      "max": 10
+    }
+  },
+  "judges": [
+    {
+      "id": "internal",
+      "model": "internal",
+      "method": "execute-test.sh",
+      "description": "Native Claude via claude -p"
+    },
+    {
+      "id": "minimax",
+      "model": "minimax-m2.5",
+      "method": "claudish",
+      "description": "MiniMax M2.5 via OpenRouter"
+    },
+    {
+      "id": "kimi",
+      "model": "kimi-k2.5",
+      "method": "claudish",
+      "description": "Kimi K2.5 via OpenRouter"
+    },
+    {
+      "id": "glm",
+      "model": "glm-5",
+      "method": "claudish",
+      "description": "GLM-5 via OpenRouter"
+    },
+    {
+      "id": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "method": "claudish",
+      "description": "Gemini 3.1 Pro Preview via OpenRouter"
+    },
+    {
+      "id": "gpt",
+      "model": "gpt-5.3-codex",
+      "method": "claudish",
+      "description": "GPT-5.3 Codex via OpenRouter"
+    },
+    {
+      "id": "qwen",
+      "model": "qwen3.5-plus-02-15",
+      "method": "claudish",
+      "description": "Qwen 3.5 Plus via OpenRouter"
+    }
+  ],
+  "thresholds": {
+    "min_judges": 3,
+    "min_output_chars": 100,
+    "score_clamp": [1, 10]
+  }
+}
