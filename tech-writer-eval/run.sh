@@ -26,8 +26,16 @@ set -euo pipefail
 unset CLAUDECODE 2>/dev/null || true
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-FRAMEWORK_DIR="$(cd "$SCRIPT_DIR/../../autotest/framework" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Look for execute-test.sh locally first, then fall back to autotest/framework
+if [[ -f "$SCRIPT_DIR/execute-test.sh" ]]; then
+  FRAMEWORK_DIR="$SCRIPT_DIR"
+elif [[ -d "$SCRIPT_DIR/../../autotest/framework" ]]; then
+  FRAMEWORK_DIR="$(cd "$SCRIPT_DIR/../../autotest/framework" && pwd)"
+else
+  echo "ERROR: execute-test.sh not found. Place it alongside run.sh or set FRAMEWORK_DIR." >&2
+  exit 1
+fi
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd 2>/dev/null || echo "$SCRIPT_DIR")"
 
 # Defaults
 OUTPUT_DIR=""
