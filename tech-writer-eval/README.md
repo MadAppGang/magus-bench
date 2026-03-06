@@ -45,7 +45,7 @@ tech-writer-eval/
 ├── run.sh                         # Main orchestrator (bash)
 ├── analyze-results.ts             # Bun/TS analyzer (Borda, Friedman, bootstrap CI)
 ├── test-cases.json                # Config: approaches, criteria, judges, thresholds
-├── .gitignore                     # Ignores results/ (committed selectively)
+├── .gitignore                     # Ignores transient files (*.pid, *.tmp)
 ├── prompts/
 │   ├── generate-default.md        # Vanilla doc prompt
 │   ├── generate-techwriter.md     # Anti-slop + Diataxis prompt
