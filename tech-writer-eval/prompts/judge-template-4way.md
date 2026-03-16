@@ -106,7 +106,22 @@ Score each sample on each criterion from 1 (worst) to 10 (best). Use the full ra
 
 ## Output Format
 
-Respond with ONLY a JSON object. No markdown fences, no explanation before or after. Raw JSON only.
+First, analyze each sample in a `<thinking>` block. For each sample (A, B, C, D), note:
+- Specific slop instances found (with quotes from the text)
+- Writing craft observations (sentence variety, voice, precision)
+- Readability assessment (sentence length, passive voice, scannability)
+- Structure evaluation (heading hierarchy, metadata, section ordering)
+- Conciseness check (information density, filler content)
+- Internal consistency check (contradictions, hallucinated APIs, coherence across sections)
+- Progressive disclosure evaluation (essential-first ordering, layered examples)
+- Diagram assessment (presence, usefulness, labeling)
+- Overall impression and relative ranking rationale
+
+Then output your scores as a JSON object immediately after the closing `</thinking>` tag. No markdown fences around the JSON, no text after the JSON.
+
+<thinking>
+[Your detailed per-sample analysis here — be specific, cite examples from each sample]
+</thinking>
 
 {
   "scores": {

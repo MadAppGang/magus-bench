@@ -1,0 +1,100 @@
+<thinking>
+**Sample A**
+- **Slop:** Very clean. Avoids marketing jargon and AI preambles. Direct and professional tone. (Score: 9)
+- **Writing Craft:** Excellent sentence variety and active voice ("The plugin loader derives...", "Claude then reads..."). Strong assertions. (Score: 9)
+- **Readability:** Very high. Scannable paragraphs, good use of lists and code blocks. (Score: 9)
+- **Structure:** Contains standard metadata (Description, Audience, Prerequisites), skip links, and logical progression of headings. (Score: 9)
+- **Conciseness:** High information density. Explains complex concepts quickly without filler. (Score: 9)
+- **Internal Consistency:** The explanation of skills, `TodoWrite`, and `/dev:implement` is perfectly consistent throughout. (Score: 10)
+- **Progressive Disclosure:** Starts with what skills are, moves to how they work, then provides a quick-start and reference. The use of "skip to" links helps. (Score: 8)
+- **Diagrams:** Excellent use of Mermaid sequence and flow diagrams to illustrate complex technical flows. (Score: 9)
+- **Overall:** A top-tier piece of technical documentation. (Score: 9)
+
+**Sample B**
+- **Slop:** Minimal slop. Very professional tone, though slightly more conversational than A in a few spots. (Score: 9)
+- **Writing Craft:** Extremely well-crafted. Great use of tables, comparisons, and formatting to highlight key distinctions. (Score: 9)
+- **Readability:** Excellent. Bullet points and bold text guide the eye perfectly. (Score: 9)
+- **Structure:** Outstanding structure with a clear Table of Contents and logical flow from concepts to deep-dive to quick-start to debugging. (Score: 10)
+- **Conciseness:** A bit longer, but every section earns its keep. No wasted space. (Score: 8)
+- **Internal Consistency:** Flawless internal logic regarding the skill ecosystem and YAML frontmatter. (Score: 10)
+- **Progressive Disclosure:** Exceptional. Builds mental models perfectly before dropping into the quick-start and advanced patterns. (Score: 10)
+- **Diagrams:** Uses clear ASCII/box diagrams. Highly functional, though not as visually rich as Mermaid. (Score: 8)
+- **Overall:** An incredibly thorough and well-designed developer guide. (Score: 9)
+
+**Sample C**
+- **Slop:** Contains some tutorial-style throat-clearing ("In the last topic, you were able to...", "How does it work under the hood?", "Let's take a closer look at..."). (Score: 7)
+- **Writing Craft:** Functional, but a bit flat. Standard tutorial voice. (Score: 7)
+- **Readability:** Good readability, short sentences. (Score: 8)
+- **Structure:** Lacks the metadata headers of the others, relies on a basic H2 structure. (Score: 7)
+- **Conciseness:** Gets to the point relatively quickly after the intro. (Score: 8)
+- **Internal Consistency:** Accurate and consistent with VS Code extension anatomy. (Score: 10)
+- **Progressive Disclosure:** Basic progressive disclosure (concepts to files). (Score: 7)
+- **Diagrams:** No diagrams present, only directory trees. (Score: 1)
+- **Overall:** A solid baseline document, but lacks the advanced structure and diagrams of the others. (Score: 6)
+
+**Sample D**
+- **Slop:** The "★ Insight" block at the end feels highly artificial and formulaic (Pattern slop). Some throat-clearing ("To create a new skill for your plugin, follow these steps"). (Score: 6)
+- **Writing Craft:** Clear and direct, but slightly generic. (Score: 7)
+- **Readability:** Good use of lists and code blocks, scannable. (Score: 8)
+- **Structure:** Good metadata header, logical flow. (Score: 8)
+- **Conciseness:** Very dense and to the point. (Score: 9)
+- **Internal Consistency:** Consistent technical explanation. (Score: 9)
+- **Progressive Disclosure:** Good, moves from concept to lifecycle to quick-start. (Score: 8)
+- **Diagrams:** Includes a basic Mermaid flowchart. (Score: 7)
+- **Overall:** A solid quick-reference, but feels a bit more synthesized/artificial than A and B. (Score: 7)
+</thinking>
+{
+  "scores": {
+    "sample_a": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 9,
+      "structure": 9,
+      "conciseness": 9,
+      "accuracy": 10,
+      "disclosure": 8,
+      "diagrams": 9,
+      "overall": 9
+    },
+    "sample_b": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 9,
+      "structure": 10,
+      "conciseness": 8,
+      "accuracy": 10,
+      "disclosure": 10,
+      "diagrams": 8,
+      "overall": 9
+    },
+    "sample_c": {
+      "slop": 7,
+      "writing_craft": 7,
+      "readability": 8,
+      "structure": 7,
+      "conciseness": 8,
+      "accuracy": 10,
+      "disclosure": 7,
+      "diagrams": 1,
+      "overall": 6
+    },
+    "sample_d": {
+      "slop": 6,
+      "writing_craft": 7,
+      "readability": 8,
+      "structure": 8,
+      "conciseness": 9,
+      "accuracy": 9,
+      "disclosure": 8,
+      "diagrams": 7,
+      "overall": 7
+    }
+  },
+  "ranking": [
+    "B",
+    "A",
+    "D",
+    "C"
+  ],
+  "reasoning": "Sample B is the most comprehensive and brilliantly structured developer guide, excelling in progressive disclosure. Sample A is a close second, featuring excellent Mermaid diagrams and zero slop. Sample D is concise but held back by an artificial 'Insight' block, while Sample C is a functional but basic tutorial lacking diagrams and advanced structure."
+}

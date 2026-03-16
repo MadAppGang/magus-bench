@@ -229,6 +229,17 @@ function parseJudgeResponse(
     cleaned = cleaned.slice(coachingMatch[0].length).trim();
   }
 
+  // Pre-processing: strip <thinking>...</thinking> CoT blocks (new CoT judge format)
+  // This handles both complete blocks and truncated ones (where </thinking> may be missing).
+  cleaned = cleaned.replace(/<thinking>[\s\S]*?<\/thinking>\s*/g, "").trim();
+  // Fallback: if an opening <thinking> tag exists without a closing tag, strip from it to the first '{'
+  if (cleaned.includes("<thinking>")) {
+    const jsonStart = cleaned.indexOf("{");
+    if (jsonStart !== -1) {
+      cleaned = cleaned.slice(jsonStart).trim();
+    }
+  }
+
   // Strategy 1: Direct parse
   const direct = tryParse(cleaned);
   if (direct) return { response: direct, method: "json" };

@@ -1,0 +1,138 @@
+<thinking>
+## Sample A Analysis
+
+**Slop:** Contains some word-level slop - "powerful" in the insight box, "seamless" in the Mermaid diagram description. Structural patterns visible: lists tend to have 3-4 items, sections are fairly uniform in length. Minor pattern slop: the insight box feels tacked on. Score: 7/10.
+
+**Writing Craft:** Good sentence variety - mixes short punchy sentences ("Follow this process") with longer explanatory ones. Active voice predominates. Structural confidence is solid. Score: 8/10.
+
+**Readability:** Short sentences, good scannability, second-person address for instructions ("Create the file", "Define metadata"). Score: 8/10.
+
+**Structure:** Has metadata header (title, audience, prerequisites). H1→H2→H3 hierarchy is clean. Section ordering logical (overview→details→quickstart→edge cases). Score: 9/10.
+
+**Conciseness:** Good information density. The insight box at the end is somewhat throwaway but minimal. Score: 8/10.
+
+**Accuracy:** Claims are internally consistent. No contradictions. Score: 9/10.
+
+**Disclosure:** Essential info first (what is a skill), then details progressively. Score: 8/10.
+
+**Diagrams:** Has one Mermaid flowchart showing skill invocation lifecycle - appropriately labeled and useful. Score: 8/10.
+
+**Overall:** Solid, professional developer documentation. Score: 8/10.
+
+---
+
+## Sample B Analysis
+
+**Slop:** This is VS Code official documentation with attribution. Very clean - no marketing superlatives, minimal corporate jargon. Some structural formulaic patterns appropriate for tutorial style. Score: 9/10.
+
+**Writing Craft:** Excellent natural-sounding prose. "In the last topic, you were able to get a basic extension running. How does it work under the hood?" is engaging. Good sentence variety. Score: 9/10.
+
+**Readability:** Good average sentence length (~15-20 words), second-person for tutorial ("your extension is activated"). Scannable. Score: 8/10.
+
+**Structure:** Title, brief conceptual intro, then file structure, then manifest deep-dive, then entry file. H1→H2→H2 (no H3), appropriate. Score: 8/10.
+
+**Conciseness:** Dense but not bloated. Each section focuses. Score: 8/10.
+
+**Accuracy:** VS Code official docs - accurate. Internal consistency good. Score: 9/10.
+
+**Disclosure:** Concepts introduced in logical order (what happens → file structure → manifest → entry file). Progressive. Score: 8/10.
+
+**Diagrams:** ASCII file tree is clean and useful. Score: 8/10.
+
+**Overall:** Excellent tutorial documentation. Score: 8.5/10.
+
+---
+
+## Sample C Analysis
+
+**Slop:** More word-level slop than A: "precise" in YAML comments, "authoritative instructions", "behavioral contract", "deterministic way". Structural: lists often 3 items, sections somewhat uniform. Pattern: "This matters because..." appears, skip links at top are formulaic. Score: 6/10.
+
+**Writing Craft:** Some overly complex sentences - "When Claude calls the Skill tool with a skill name, the plugin runtime returns the entire file body as a tool result." Sentence variety exists but some passages are dense. Score: 7/10.
+
+**Readability:** Some sentences exceed 25 words. "This matters because skills are not system prompt injections" is 14 words but the constructions get longer. Second-person usage is good. Score: 6/10.
+
+**Structure:** Title, description, audience, prerequisites metadata present but not in frontmatter format. Skip links are nice but indicate formulaic structure. Good TOC. Score: 8/10.
+
+**Conciseness:** More verbose than A. Some repetition. "The chain can go five deep before context pressure becomes a concern" is borderline filler. Score: 7/10.
+
+**Accuracy:** Internally consistent. Score: 8/10.
+
+**Disclosure:** Essential-first approach. Quick-start and reference sections provided. Score: 7/10.
+
+**Diagrams:** Two Mermaid diagrams (sequence and flowchart) - both useful and correctly labeled. Score: 8/10.
+
+**Overall:** Comprehensive but somewhat verbose. Score: 7/10.
+
+---
+
+## Sample D Analysis
+
+**Slop:** Word-level: "powerful" appears, "canonical example", "load-bearing" (2x). Structural: Table of Contents is formulaic, lists mostly 3-5 items, sections very uniform. Pattern: "This is the most important behavioral toggle", "When in doubt", reference section that restates. Score: 6/10.
+
+**Writing Craft:** Functional but more instructional/formulaic than B. Some good direct statements but also hedging language. Score: 7/10.
+
+**Readability:** More sentences exceed 25 words than A or B. More passive voice. Score: 6/10.
+
+**Structure:** Best TOC - detailed 11-item table of contents. Proper metadata header. H1→H2→H3 hierarchy is excellent. Score: 9/10.
+
+**Conciseness:** Longest document (~1100+ words). Reference table is useful but some sections could be trimmed. Score: 7/10.
+
+**Accuracy:** Internally consistent. Score: 8/10.
+
+**Disclosure:** Good essential-first, progressive detail. Excellent quick-start section. Score: 8/10.
+
+**Diagrams:** ASCII diagrams for skill discovery, invocation flow, lifecycle - detailed but less polished than Mermaid in A/C. Score: 7/10.
+
+**Overall:** Reference-style depth but verbose. Score: 7/10.
+</thinking>
+
+{
+  "scores": {
+    "sample_a": {
+      "slop": 7,
+      "writing_craft": 8,
+      "readability": 8,
+      "structure": 9,
+      "conciseness": 8,
+      "accuracy": 9,
+      "disclosure": 8,
+      "diagrams": 8,
+      "overall": 8
+    },
+    "sample_b": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 8,
+      "structure": 8,
+      "conciseness": 8,
+      "accuracy": 9,
+      "disclosure": 8,
+      "diagrams": 8,
+      "overall": 8.5
+    },
+    "sample_c": {
+      "slop": 6,
+      "writing_craft": 7,
+      "readability": 6,
+      "structure": 8,
+      "conciseness": 7,
+      "accuracy": 8,
+      "disclosure": 7,
+      "diagrams": 8,
+      "overall": 7
+    },
+    "sample_d": {
+      "slop": 6,
+      "writing_craft": 7,
+      "readability": 6,
+      "structure": 9,
+      "conciseness": 7,
+      "accuracy": 8,
+      "disclosure": 8,
+      "diagrams": 7,
+      "overall": 7
+    }
+  },
+  "ranking": ["B", "A", "C", "D"],
+  "reasoning": "Sample B (VS Code official docs) edges out A as the best due to cleaner prose with minimal slop and excellent tutorial voice. A is a close second - solid developer docs with good structure but slightly more word-level slop. C and D tie on overall but C edges D on readability and slop - both comprehensive but D is overly verbose as a reference document while C has better diagram quality."
+}

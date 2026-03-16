@@ -1,0 +1,45 @@
+name: Shellcheck
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.sh'
+      - '.github/workflows/shellcheck.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.sh'
+      - '.github/workflows/shellcheck.yml'
+
+jobs:
+  shellcheck:
+    name: Shellcheck all shell scripts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Find and lint all .sh files
+        run: |
+          mapfile -t SCRIPTS < <(find . \
+            -name '*.sh' \
+            -not -path './.git/*' \
+            -not -path './node_modules/*' \
+            | sort)
+
+          if [[ ${#SCRIPTS[@]} -eq 0 ]]; then
+            echo "No .sh files found."
+            exit 0
+          fi
+
+          echo "Running shellcheck on ${#SCRIPTS[@]} script(s):"
+          printf '  %s\n' "${SCRIPTS[@]}"
+          echo ""
+
+          shellcheck "${SCRIPTS[@]}"
+          echo "All scripts passed shellcheck."

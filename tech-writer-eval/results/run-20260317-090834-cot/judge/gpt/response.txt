@@ -1,0 +1,166 @@
+<thinking>
+Sample A
+- Slop instances:
+  - Mild throat-clearing/meta framing: “To create a new skill for your plugin, follow these steps.” (acceptable instructional lead, but generic).
+  - Slight jargon-y abstraction: “deterministic way to enforce multi-step workflows in an otherwise non-deterministic LLM environment.”
+  - No obvious marketing superlatives or AI preamble clichés.
+- Writing craft:
+  - Generally clear, active voice, concrete examples.
+  - Sentence variety is moderate; some sections read template-like.
+  - “★ Insight” box adds synthesis and authorial confidence.
+- Readability:
+  - Short-to-medium sentences, strong scannability with headings, lists, code blocks.
+  - Passive voice is low.
+  - Good instructional directness.
+- Structure:
+  - Strong hierarchy (H1→H2/H3), includes audience/prereqs.
+  - Logical order: define → schema → lifecycle → injection → chaining → quick-start → edge cases.
+- Conciseness:
+  - Fairly concise; little filler.
+  - Minor redundancy between lifecycle and chaining explanations.
+- Internal consistency:
+  - One notable internal issue: says skill body becomes “part of the system prompt,” which conflicts with other samples’ tool-result injection model. Within A itself, it consistently presents this model, but it may be technically suspect.
+  - Otherwise coherent and non-contradictory internally.
+- Progressive disclosure:
+  - Good: starts with basics, then internals, then practical quick-start and edge cases.
+- Diagrams:
+  - One Mermaid flowchart, relevant and labeled.
+- Overall:
+  - Strong practical doc with good density and usability; slight accuracy concern around “system prompt” phrasing and a bit of templated language.
+
+Sample B
+- Slop instances:
+  - Minor formulaic/verbose stretches: repeated “This is…” framing and large explanatory blocks.
+  - Some meta commentary: “Understanding the exact injection mechanism is essential…”
+  - No major banned buzzword clutter.
+- Writing craft:
+  - High precision, consistent technical voice, explicit contrasts (`chains` vs `requires`, command vs skill vs agent).
+  - Good sentence variation, though occasionally over-elaborate.
+- Readability:
+  - Very scannable via TOC, tables, diagrams, checklists.
+  - Paragraph lengths sometimes long but usually segmented with headings and bullets.
+- Structure:
+  - Excellent hierarchy and navigation; comprehensive reference architecture.
+  - Clear ordering from concept to implementation to troubleshooting/reference.
+- Conciseness:
+  - Main weakness: repetitive and expansive; same concepts re-explained in multiple sections.
+  - High quality per section, but overall bloated.
+- Internal consistency:
+  - Strong internal coherence; terms and mechanics are used consistently across sections.
+  - No obvious contradictions.
+- Progressive disclosure:
+  - Excellent layered progression: definition → schema → invocation mechanics → chaining → lifecycle → quick-start → advanced/debug.
+- Diagrams:
+  - Multiple useful diagrams (ASCII/box flows), not decorative.
+- Overall:
+  - Most complete and technically methodical, but overlong and somewhat repetitive.
+
+Sample C
+- Slop instances:
+  - Very little AI-style slop; largely neutral, factual prose.
+  - Small throat-clearing line: “Let’s take a closer look…”
+- Writing craft:
+  - Solid but plain; less distinctive voice.
+  - Clear explanatory prose with concrete examples and code.
+- Readability:
+  - Good sentence length and paragraph size.
+  - Scannable sections and bullets; minimal cognitive load.
+- Structure:
+  - Adequate hierarchy, but less complete metadata framing for this benchmark type (no explicit audience/scope block).
+  - Order is logical for “anatomy” walkthrough.
+- Conciseness:
+  - Good density; little repetition.
+- Internal consistency:
+  - High consistency; claims and examples align (activation events note vs version behavior is clearly qualified).
+- Progressive disclosure:
+  - Good foundational flow from concepts to file structure to manifest to entry file.
+  - Less advanced layering than others.
+- Diagrams:
+  - No diagram (tree listing is useful but not really a conceptual diagram per criterion); score should be low.
+- Overall:
+  - Clean, trustworthy, readable baseline doc; less tailored depth on plugin/skill chaining mechanisms and lacks diagrammatic aids.
+
+Sample D
+- Slop instances:
+  - Some emphatic/meta phrasing: “That’s the point.” “What Skills Actually Are” rhetorical style.
+  - A bit formulaic in repeated pattern sections, but less bloated than B.
+  - No major buzzword spam.
+- Writing craft:
+  - Strong, confident voice; direct assertions and practical framing.
+  - Good sentence rhythm and concrete examples.
+- Readability:
+  - Highly scannable headings, short sections, bullets, code/diagram alternation.
+  - Low passive voice, mostly concise sentences.
+- Structure:
+  - Strong hierarchy, includes description/audience/prereqs and quick links.
+  - Sequence is clear: concept → discovery → invocation → checklist → chaining → lifecycle → quick-start → schema → edge cases → patterns.
+- Conciseness:
+  - Better than B, still somewhat long; less redundant overall.
+- Internal consistency:
+  - Mostly coherent, but has potential tension:
+    - Says skill content can “override earlier instructions” and treats as “behavioral contract to follow exactly,” which is stronger than later caveats about flexible/rigid and context behavior.
+    - Claims “skills can also live flat as {skill-name}.md” and “last-installed plugin wins” namespace collision; plausible but unsubstantiated internally.
+  - Still largely self-consistent operationally.
+- Progressive disclosure:
+  - Very good layering and practical deepening; edge cases and design patterns are well placed later.
+- Diagrams:
+  - Two mermaid diagrams, both informative and correctly tied to process explanation.
+- Overall:
+  - Strong blend of practical clarity, structure, and readability; slightly less rigorous than B but more concise and easier to operationalize.
+
+Relative ranking rationale:
+- D best balance of clarity, structure, practicality, and concision with strong diagrams.
+- B is most exhaustive and rigorous but loses points on concision/repetition.
+- A is solid and concise but less comprehensive and has a notable technical-claim risk.
+- C is clean and consistent but least aligned to the specific plugin-skill chaining depth and has no diagram support.
+</thinking>
+{
+  "scores": {
+    "sample_a": {
+      "slop": 8,
+      "writing_craft": 8,
+      "readability": 8,
+      "structure": 8,
+      "conciseness": 8,
+      "accuracy": 7,
+      "disclosure": 8,
+      "diagrams": 7,
+      "overall": 8
+    },
+    "sample_b": {
+      "slop": 7,
+      "writing_craft": 9,
+      "readability": 8,
+      "structure": 10,
+      "conciseness": 6,
+      "accuracy": 9,
+      "disclosure": 10,
+      "diagrams": 8,
+      "overall": 8
+    },
+    "sample_c": {
+      "slop": 9,
+      "writing_craft": 7,
+      "readability": 9,
+      "structure": 7,
+      "conciseness": 8,
+      "accuracy": 9,
+      "disclosure": 7,
+      "diagrams": 1,
+      "overall": 7
+    },
+    "sample_d": {
+      "slop": 8,
+      "writing_craft": 9,
+      "readability": 9,
+      "structure": 9,
+      "conciseness": 8,
+      "accuracy": 8,
+      "disclosure": 9,
+      "diagrams": 9,
+      "overall": 9
+    }
+  },
+  "ranking": ["D", "B", "A", "C"],
+  "reasoning": "D delivers the best publishable balance of technical depth, instructional clarity, and scannable structure while staying more concise than B. B is exceptionally thorough and consistent but noticeably repetitive. A is practical and solid but less comprehensive and has a potentially incorrect framing of injection mechanics, while C is clear and reliable yet least aligned to the target mechanism depth and lacks diagram support."
+}

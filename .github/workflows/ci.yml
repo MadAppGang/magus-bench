@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Lint & Format Check
+  # Verifies TypeScript compiles and bash scripts pass shellcheck.
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Check TypeScript compiles (analyze-results.ts)
+        run: bun build --no-bundle tech-writer-eval/analyze-results.ts --outdir /tmp/ts-check
+
+      - name: Shellcheck run.sh
+        run: shellcheck tech-writer-eval/run.sh
+
+      - name: Shellcheck execute-test.sh
+        run: shellcheck tech-writer-eval/execute-test.sh
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Dry-Run Validation
+  # Runs run.sh --dry-run to verify pipeline configuration loads correctly,
+  # and validates test-cases.json schema with jq type checks.
+  # Does NOT execute any model calls.
+  # ---------------------------------------------------------------------------
+  dry-run:
+    name: Dry-Run Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Install shellcheck (for claudish stub prerequisite check)
+        run: sudo apt-get install -y shellcheck
+
+      # run.sh requires claudish to be on PATH even in --dry-run mode (dependency
+      # check runs before the dry-run guard). Provide a no-op stub so CI passes
+      # without actual API credentials.
+      - name: Create claudish stub
+        run: |
+          sudo tee /usr/local/bin/claudish > /dev/null <<'EOF'
+          #!/bin/bash
+          echo "claudish stub: dry-run only, no execution" >&2
+          exit 0
+          EOF
+          sudo chmod +x /usr/local/bin/claudish
+
+      - name: Run pipeline dry-run
+        run: ./tech-writer-eval/run.sh --dry-run
+
+      - name: Validate test-cases.json — top-level keys present
+        run: |
+          jq -e 'type == "object"' tech-writer-eval/test-cases.json
+          jq -e '.topic | type == "object"' tech-writer-eval/test-cases.json
+          jq -e '.approaches | type == "array" and length > 0' tech-writer-eval/test-cases.json
+          jq -e '.evaluation.criteria | type == "array" and length > 0' tech-writer-eval/test-cases.json
+          jq -e '.judges | type == "array" and length > 0' tech-writer-eval/test-cases.json
+          jq -e '.thresholds | type == "object"' tech-writer-eval/test-cases.json
+
+      - name: Validate test-cases.json — criteria have required fields
+        run: |
+          jq -e '
+            .evaluation.criteria | all(
+              . | has("id") and has("name") and has("weight") and has("description")
+              and (.weight | type == "number")
+            )
+          ' tech-writer-eval/test-cases.json
+
+      - name: Validate test-cases.json — judges have required fields
+        run: |
+          jq -e '
+            .judges | all(
+              . | has("id") and has("model") and has("method")
+            )
+          ' tech-writer-eval/test-cases.json
+
+      - name: Validate test-cases.json — total_weight is a positive number
+        run: |
+          jq -e '.evaluation.total_weight | type == "number" and . > 0' \
+            tech-writer-eval/test-cases.json
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Analyze Existing Results
+  # Runs analyze-results.ts against the committed results directory (if any)
+  # to confirm the analyzer doesn't crash on real data.
+  # No API keys needed — this only reads static files.
+  # ---------------------------------------------------------------------------
+  analyze-existing:
+    name: Analyze Existing Results
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Find latest result run
+        id: find-run
+        run: |
+          LATEST=$(ls -dt tech-writer-eval/results/run-* 2>/dev/null | head -1)
+          if [[ -n "$LATEST" && -f "$LATEST/sample-mapping.json" ]]; then
+            echo "run_dir=$LATEST" >> "$GITHUB_OUTPUT"
+            echo "has_results=true" >> "$GITHUB_OUTPUT"
+            echo "Found result run: $LATEST"
+          else
+            echo "has_results=false" >> "$GITHUB_OUTPUT"
+            echo "No committed result runs found — skipping analyzer check."
+          fi
+
+      - name: Run analyzer on existing results
+        if: steps.find-run.outputs.has_results == 'true'
+        run: |
+          bun tech-writer-eval/analyze-results.ts "${{ steps.find-run.outputs.run_dir }}"

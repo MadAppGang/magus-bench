@@ -1,0 +1,4 @@
+results/latest.json
+results/*.json
+.promptfoo/
+generated/

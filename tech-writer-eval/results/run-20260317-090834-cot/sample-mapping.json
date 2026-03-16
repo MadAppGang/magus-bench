@@ -1,0 +1,18 @@
+{
+  "contestants": {
+    "A": "default",
+    "B": "techwriter",
+    "C": "reference",
+    "D": "gemini"
+  },
+  "judge_orderings": {
+    "internal": ["D","B","A","C"],
+    "minimax": ["D","C","B","A"],
+    "kimi": ["B","A","D","C"],
+    "glm": ["D","C","A","B"],
+    "gemini": ["B","A","C","D"],
+    "gpt": ["D","A","C","B"],
+    "qwen": ["A","D","B","C"]
+  },
+  "created_at": "2026-03-16T22:08:39Z"
+}

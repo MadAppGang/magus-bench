@@ -17,6 +17,7 @@
 #   --timeout <seconds>    Per-execution timeout (default: 600)
 #   --skip-generate        Reuse existing generated docs (requires --output-dir)
 #   --skip-judge           Reuse existing judge outputs (requires --output-dir)
+#   --compare-baseline     Run regression check after Phase 3 (requires a captured baseline)
 #   --dry-run              Show what would run without executing
 #   --help                 Show this help message
 
@@ -42,6 +43,7 @@ OUTPUT_DIR=""
 TIMEOUT=600
 SKIP_GENERATE=false
 SKIP_JUDGE=false
+COMPARE_BASELINE=false
 DRY_RUN=false
 
 # Parse arguments
@@ -51,9 +53,10 @@ while [[ $# -gt 0 ]]; do
     --timeout) TIMEOUT="$2"; shift 2 ;;
     --skip-generate) SKIP_GENERATE=true; shift ;;
     --skip-judge) SKIP_JUDGE=true; shift ;;
+    --compare-baseline) COMPARE_BASELINE=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     --help)
-      head -25 "$0" | tail -24
+      head -26 "$0" | tail -25
       exit 0
       ;;
     *) echo "ERROR: Unknown option: $1" >&2; exit 1 ;;
@@ -283,6 +286,11 @@ if $DRY_RUN; then
   echo "[DRY RUN] Phase 3: Analyze"
   echo "  bun $SCRIPT_DIR/analyze-results.ts $OUTPUT_DIR"
   echo ""
+  if $COMPARE_BASELINE; then
+    echo "[DRY RUN] Baseline Comparison"
+    echo "  $SCRIPT_DIR/compare-baseline.sh $OUTPUT_DIR"
+    echo ""
+  fi
   echo "[DRY RUN] No executions performed."
   exit 0
 fi
@@ -585,3 +593,24 @@ echo "Mapping:       $OUTPUT_DIR/sample-mapping.json"
 echo "Report (JSON): $OUTPUT_DIR/report/tech-writer-benchmark.json"
 echo "Report (MD):   $OUTPUT_DIR/report/tech-writer-benchmark.md"
 echo ""
+
+# =====================================================================
+# BASELINE COMPARISON (optional)
+# =====================================================================
+
+if $COMPARE_BASELINE; then
+  COMPARE_SCRIPT="$SCRIPT_DIR/compare-baseline.sh"
+  if [[ ! -f "$COMPARE_SCRIPT" ]]; then
+    echo "WARNING: compare-baseline.sh not found at $COMPARE_SCRIPT — skipping comparison." >&2
+  elif [[ ! -f "$SCRIPT_DIR/baselines/latest/scores.json" ]]; then
+    echo "WARNING: No baseline captured yet. Run ./capture-baseline.sh first." >&2
+    echo "         Skipping regression check."
+    echo ""
+  else
+    echo ""
+    "$COMPARE_SCRIPT" "$OUTPUT_DIR" || {
+      echo ""
+      echo "WARNING: Regression(s) detected. Review the table above." >&2
+    }
+  fi
+fi

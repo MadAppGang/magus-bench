@@ -1,3 +1,8 @@
 # Transient files from active runs
 *.pid
 *.tmp
+
+# Baseline snapshots (local-only by default; commit explicitly if desired)
+# Keep README.md and .gitkeep tracked.
+baselines/latest/
+baselines/run-*/

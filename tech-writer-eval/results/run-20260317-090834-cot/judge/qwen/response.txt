@@ -1,0 +1,50 @@
+{
+  "scores": {
+    "sample_a": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 10,
+      "structure": 10,
+      "conciseness": 9,
+      "accuracy": 9,
+      "disclosure": 10,
+      "diagrams": 9,
+      "overall": 9
+    },
+    "sample_b": {
+      "slop": 8,
+      "writing_craft": 8,
+      "readability": 8,
+      "structure": 9,
+      "conciseness": 8,
+      "accuracy": 8,
+      "disclosure": 8,
+      "diagrams": 7,
+      "overall": 8
+    },
+    "sample_c": {
+      "slop": 7,
+      "writing_craft": 7,
+      "readability": 7,
+      "structure": 8,
+      "conciseness": 7,
+      "accuracy": 7,
+      "disclosure": 7,
+      "diagrams": 8,
+      "overall": 7
+    },
+    "sample_d": {
+      "slop": 10,
+      "writing_craft": 10,
+      "readability": 10,
+      "structure": 10,
+      "conciseness": 10,
+      "accuracy": 10,
+      "disclosure": 10,
+      "diagrams": 9,
+      "overall": 10
+    }
+  },
+  "ranking": ["D", "A", "B", "C"],
+  "reasoning": "Samples D (VS Code) and A (Claude Code Skill system) both demonstrate exceptional technical clarity and structure, but D's official Microsoft documentation edges out as a textbook example of extension anatomy. A's depth on skill chaining earns it second place. B and C show minor structural formulaic patterns with B's checklist-driven approach scoring consistently higher than C's verbose lifecycle explanations."
+}

@@ -1,0 +1,566 @@
+# skill-routing-eval/test-cases.yaml
+#
+# All test cases converted from:
+#   - autotest/skills/test-cases.json      (8 skill routing tests)
+#   - autotest/subagents/test-cases.json   (agent delegation tests)
+#
+# Groups:
+#   explicit-skill        — user names a skill directly; must use Skill tool
+#   implicit-skill        — user describes a need; routing table should surface the skill
+#   agent-vs-skill        — disambiguation: a skill name must NOT become a Task subagent_type
+#   spelling              — Bash commands after skill load must spell tool names correctly
+#   mixed-routing         — one part uses Skill tool, another part delegates a Task agent
+#   no-skill              — simple request handled directly, no skill invocation expected
+#   explicit-delegation   — user names an agent explicitly; Task must use that agent
+#   passive-routing       — implicit delegation via CLAUDE.md routing table
+#   implicit-delegation   — complex task where the correct agent is implied
+#   hinted-delegation     — prompt says "use a subagent" without naming one
+#   direct-handling       — simple task, no Task call expected
+
+# ---------------------------------------------------------------------------
+# GROUP: explicit-skill
+# ---------------------------------------------------------------------------
+
+- description: "Explicit claudemem skill request should use Skill tool, not Task"
+  metadata:
+    id: skill-claudemem-explicit-01
+    category: explicit-skill
+    tags: [explicit, claudemem, skill-vs-agent]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      Use the code-analysis:claudemem-search skill to understand how to search
+      this codebase with claudemem. Just load the skill and report what commands
+      are available. Do not actually run claudemem.
+  assert:
+    - type: contains
+      value: "claudemem"
+      metric: "mentions-claudemem"
+    - type: llm-rubric
+      value: >
+        The response must invoke the Skill tool (not the Task or Agent tool) to
+        load "code-analysis:claudemem-search". A Task call whose subagent_type
+        is "code-analysis:claudemem-search" is a FAILURE. The response should
+        describe claudemem commands without running them.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "correct-skill-tool-usage"
+
+- description: "Explicit deep-analysis skill should be invoked via Skill tool"
+  metadata:
+    id: skill-deep-analysis-01
+    category: explicit-skill
+    tags: [explicit, deep-analysis, skill-vs-agent]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      Use the code-analysis:deep-analysis skill to prepare a comprehensive
+      analysis approach for the multimodel plugin. Just load the skill and
+      explain the methodology it describes.
+  assert:
+    - type: contains
+      value: "deep-analysis"
+      metric: "mentions-deep-analysis"
+    - type: llm-rubric
+      value: >
+        The response must invoke the Skill tool (not the Task or Agent tool) to
+        load "code-analysis:deep-analysis". A Task call with subagent_type
+        "code-analysis:deep-analysis" is a FAILURE. The response should
+        summarise the methodology described by the skill.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "correct-skill-tool-usage"
+
+- description: "Architect-detective skill should be invoked via Skill tool, not as Task agent"
+  metadata:
+    id: skill-architect-detective-01
+    category: explicit-skill
+    tags: [explicit, architect, skill-vs-agent]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      Use the code-analysis:architect-detective skill to understand the
+      architecture investigation methodology. Load the skill and summarise what
+      claudemem commands it recommends for architecture analysis.
+  assert:
+    - type: contains
+      value: "architect"
+      metric: "mentions-architect"
+    - type: not-contains
+      value: "clademem"
+      metric: "no-claudemem-typo"
+    - type: llm-rubric
+      value: >
+        The response must invoke the Skill tool (not the Task or Agent tool) to
+        load "code-analysis:architect-detective". A Task call with
+        subagent_type "code-analysis:architect-detective" is a FAILURE. Any
+        Bash commands that reference claudemem must spell it correctly
+        ("claudemem", not "clademem" or any other variant).
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "correct-skill-tool-usage"
+
+# ---------------------------------------------------------------------------
+# GROUP: implicit-skill
+# ---------------------------------------------------------------------------
+
+- description: "Implicit claudemem need should invoke skill from routing table, not try as Task agent"
+  metadata:
+    id: skill-claudemem-implicit-01
+    category: implicit-skill
+    tags: [implicit, claudemem, routing-table]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      I need to search this codebase semantically using claudemem to find all
+      authentication-related code. First load the appropriate skill, then
+      explain what claudemem commands I should use.
+  assert:
+    - type: contains
+      value: "claudemem"
+      metric: "mentions-claudemem"
+    - type: llm-rubric
+      value: >
+        The response must recognise that "claudemem" implies the
+        code-analysis:claudemem-search skill and invoke it via the Skill tool
+        (not Task). A Task call whose subagent_type contains "claudemem" is a
+        FAILURE. The response should then explain the relevant claudemem
+        commands.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "routing-table-honored"
+
+# ---------------------------------------------------------------------------
+# GROUP: agent-vs-skill  (disambiguation)
+# ---------------------------------------------------------------------------
+
+- description: "claudemem-search must never appear as a Task subagent_type"
+  metadata:
+    id: skill-not-agent-01
+    category: agent-vs-skill
+    tags: [disambiguation, agent-vs-skill]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      I need semantic code search capabilities. Use claudemem to map the
+      architecture of the plugins directory. Load the appropriate skill first.
+  assert:
+    - type: contains
+      value: "claudemem"
+      metric: "mentions-claudemem"
+    - type: llm-rubric
+      value: >
+        The response must load the claudemem-related skill via the Skill tool.
+        It must NOT create a Task whose subagent_type is "claudemem-search" or
+        "code-analysis:claudemem-search" — that would be treating a skill as
+        an agent, which is incorrect.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "skill-not-treated-as-agent"
+
+# ---------------------------------------------------------------------------
+# GROUP: spelling
+# ---------------------------------------------------------------------------
+
+- description: "After loading claudemem skill, Bash commands must spell 'claudemem' correctly"
+  metadata:
+    id: skill-spelling-bash-01
+    category: spelling
+    tags: [spelling, claudemem, bash]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      Load the code-analysis:claudemem-search skill, then run
+      'which claudemem' and 'claudemem --version' to check if claudemem is
+      installed.
+  assert:
+    - type: contains
+      value: "claudemem"
+      metric: "correct-spelling-present"
+    - type: not-contains
+      value: "clademem"
+      metric: "no-typo-clademem"
+    - type: llm-rubric
+      value: >
+        The response must load the skill via the Skill tool. Any Bash tool
+        calls must spell "claudemem" correctly in every occurrence — the
+        common typo "clademem" (missing the second 'u') is a FAILURE.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "correct-spelling"
+
+# ---------------------------------------------------------------------------
+# GROUP: mixed-routing
+# ---------------------------------------------------------------------------
+
+- description: "Detective agent for investigation; claudemem skill for search tool guidance"
+  metadata:
+    id: skill-routing-detective-01
+    category: mixed-routing
+    tags: [detective, claudemem, mixed]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      Investigate the hook system in this codebase. If you need claudemem for
+      searching, load the claudemem-search skill first. Use the detective agent
+      for the actual investigation.
+  assert:
+    - type: contains
+      value: "detective"
+      metric: "mentions-detective"
+    - type: llm-rubric
+      value: >
+        The response should delegate to the code-analysis:detective agent via a
+        Task call for the investigation. If it also needs claudemem guidance, it
+        should load code-analysis:claudemem-search via the Skill tool (not a
+        Task). A Task call whose subagent_type is a skill name is a FAILURE.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "correct-mixed-routing"
+
+# ---------------------------------------------------------------------------
+# GROUP: no-skill
+# ---------------------------------------------------------------------------
+
+- description: "Simple file read should be handled directly — no skill invocation"
+  metadata:
+    id: skill-simple-no-skill-01
+    category: no-skill
+    tags: [simple, direct, no-skill]
+    source: skills/test-cases.json
+  vars:
+    prompt: >
+      Read the file plugins/code-analysis/plugin.json and tell me what agents
+      are registered.
+  assert:
+    - type: not-contains
+      value: "Skill("
+      metric: "no-skill-call"
+    - type: llm-rubric
+      value: >
+        This is a simple file-read task. The response should read the file
+        directly and list the agents. It should NOT invoke any Skill tool or
+        Task/Agent tool — direct handling is expected.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "direct-handling"
+
+# ---------------------------------------------------------------------------
+# GROUP: explicit-delegation
+# ---------------------------------------------------------------------------
+
+- description: "Explicit dev:researcher request should be honored"
+  metadata:
+    id: explicit-researcher-01
+    category: explicit-delegation
+    tags: [explicit, named, research]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Use the dev:researcher agent to search the web for the latest React
+      Server Components patterns and write a comprehensive research report to
+      ai-docs/research-rsc.md
+  assert:
+    - type: contains
+      value: "researcher"
+      metric: "mentions-researcher"
+    - type: llm-rubric
+      value: >
+        The response must create a Task call with subagent_type "dev:researcher"
+        (or equivalent). Handling the research directly without delegating is a
+        FAILURE because the user explicitly named an agent.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "explicit-agent-honored"
+
+- description: "Explicit code-analysis:detective request should be honored"
+  metadata:
+    id: explicit-detective-01
+    category: explicit-delegation
+    tags: [explicit, named, investigation]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Use the code-analysis:detective agent to analyze the plugin loading system
+      in this codebase and trace all dependencies
+  assert:
+    - type: contains
+      value: "detective"
+      metric: "mentions-detective"
+    - type: llm-rubric
+      value: >
+        The response must create a Task call with subagent_type
+        "code-analysis:detective". Delegating to a different agent or handling
+        the task directly are both FAILURES.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "explicit-agent-honored"
+
+- description: "Explicit dev:developer request should be honored"
+  metadata:
+    id: explicit-developer-01
+    category: explicit-delegation
+    tags: [explicit, named, implementation]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Use the dev:developer agent to implement a new utility module for string
+      sanitization with full test coverage
+  assert:
+    - type: contains
+      value: "developer"
+      metric: "mentions-developer"
+    - type: llm-rubric
+      value: >
+        The response must create a Task call with subagent_type "dev:developer".
+        Delegating to a different agent or implementing directly are both
+        FAILURES.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "explicit-agent-honored"
+
+- description: "Explicit dev:debugger request should be honored"
+  metadata:
+    id: explicit-debugger-01
+    category: explicit-delegation
+    tags: [explicit, named, debugging]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Use the dev:debugger agent to investigate and fix the root cause of the
+      authentication timeout errors
+  assert:
+    - type: contains
+      value: "debugger"
+      metric: "mentions-debugger"
+    - type: llm-rubric
+      value: >
+        The response must create a Task call with subagent_type "dev:debugger".
+        Handling the debugging directly or delegating to a different agent are
+        both FAILURES.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "explicit-agent-honored"
+
+- description: "Explicit dev:architect request should be honored"
+  metadata:
+    id: explicit-architect-01
+    category: explicit-delegation
+    tags: [explicit, named, architecture]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Use the dev:architect agent to design the system architecture for a new
+      microservices-based payment processing system
+  assert:
+    - type: contains
+      value: "architect"
+      metric: "mentions-architect"
+    - type: llm-rubric
+      value: >
+        The response must create a Task call with subagent_type "dev:architect".
+        Designing the architecture directly or using a different agent are both
+        FAILURES.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "explicit-agent-honored"
+
+# ---------------------------------------------------------------------------
+# GROUP: passive-routing  (CLAUDE.md routing table triggers delegation)
+# ---------------------------------------------------------------------------
+
+- description: "Complex research task — CLAUDE.md routing table should trigger dev:researcher"
+  metadata:
+    id: delegate-research-01
+    category: passive-routing
+    tags: [research, complex, web, routing-table]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      I need a comprehensive deep-dive research report on modern authentication
+      patterns including OAuth 2.1, passkeys, and WebAuthn. Search the web for
+      recent developments, compare approaches, assess security tradeoffs, and
+      write a detailed findings document to ai-docs/auth-research.md
+  assert:
+    - type: llm-rubric
+      value: >
+        This is a complex web-research task. The response should delegate to
+        the dev:researcher agent via a Task call. Handling the research directly
+        without delegation is the most common failure. Using a generic
+        general-purpose agent when a specialist is available is acceptable but
+        not ideal.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "passive-routing-triggered"
+
+- description: "Substantial implementation task — CLAUDE.md routing table should trigger dev:developer"
+  metadata:
+    id: delegate-implement-01
+    category: passive-routing
+    tags: [implementation, complex, routing-table]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Implement a complete caching layer for our plugin system: create a cache
+      manager class, add LRU eviction, implement cache invalidation hooks, add
+      comprehensive tests, and ensure all linting passes. This is a substantial
+      feature implementation.
+  assert:
+    - type: llm-rubric
+      value: >
+        This is a substantial implementation task. The response should delegate
+        to the dev:developer agent via a Task call. Implementing everything
+        inline without delegation is a FAILURE for this scale of task. Using a
+        general-purpose agent is suboptimal but not a hard failure.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "passive-routing-triggered"
+
+# ---------------------------------------------------------------------------
+# GROUP: implicit-delegation
+# ---------------------------------------------------------------------------
+
+- description: "Deep codebase investigation should be delegated to code-analysis:detective"
+  metadata:
+    id: delegate-investigate-01
+    category: implicit-delegation
+    tags: [investigation, complex, codebase]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      I need you to do a thorough investigation of how the entire plugin system
+      works in this codebase — trace the loading mechanism, understand the
+      namespace resolution, find all integration points, and document the
+      architecture. This is a deep-dive investigation that will require
+      examining many files.
+  assert:
+    - type: llm-rubric
+      value: >
+        This is a deep, multi-file investigation. The response should delegate
+        to code-analysis:detective via a Task call. Handling it inline without
+        delegation is a FAILURE given the stated scope. The Explore subagent is
+        a marginal acceptable alternative; a general-purpose agent is
+        suboptimal.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "implicit-delegation-triggered"
+
+# ---------------------------------------------------------------------------
+# GROUP: hinted-delegation  (prompt says "use a subagent" without naming one)
+# ---------------------------------------------------------------------------
+
+- description: "Memory-leak debug with 'use a subagent' hint should delegate to dev:debugger"
+  metadata:
+    id: delegate-debug-01
+    category: hinted-delegation
+    tags: [hint, debugging, complex]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      There's a memory leak in our application that only manifests after
+      processing 1000+ requests. Use a subagent to investigate the root cause —
+      check for unclosed connections, leaked event listeners, and circular
+      references across the codebase.
+  assert:
+    - type: llm-rubric
+      value: >
+        The prompt explicitly asks to use a subagent. The response must create a
+        Task call. The ideal agent is dev:debugger; code-analysis:detective is
+        an acceptable alternative. NOT creating a Task call is a FAILURE because
+        the user explicitly requested subagent delegation.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "hinted-delegation-honored"
+
+- description: "Parallel research with 'separate subagents' hint should spawn multiple Tasks"
+  metadata:
+    id: delegate-parallel-01
+    category: hinted-delegation
+    tags: [hint, parallel, research, multi-agent]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Research these three topics in parallel using separate subagents:
+      (1) GraphQL vs REST performance benchmarks,
+      (2) WebSocket scaling patterns,
+      (3) Edge computing for API gateways.
+      Each subagent should write findings to a separate file.
+  assert:
+    - type: llm-rubric
+      value: >
+        The prompt explicitly asks for separate subagents in parallel. The
+        response should create multiple Task calls (ideally 3, one per topic),
+        each with a dev:researcher or general-purpose agent. Using a single Task
+        for all topics is a FAILURE. Doing the research inline without any Task
+        call is also a FAILURE.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "parallel-delegation-honored"
+
+- description: "Subagent hint for codebase review should trigger delegation"
+  metadata:
+    id: hint-subagent-01
+    category: hinted-delegation
+    tags: [hint, review]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Launch a subagent to comprehensively review all agent definitions across
+      every plugin in this repository and generate a quality report comparing
+      their description effectiveness
+  assert:
+    - type: llm-rubric
+      value: >
+        The prompt explicitly says "launch a subagent". The response must create
+        a Task call. Ideal agents: agentdev:reviewer or code-analysis:detective.
+        A general-purpose agent is acceptable. NOT delegating is a FAILURE.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "hinted-delegation-honored"
+
+- description: "Background security scan hint should delegate via Task"
+  metadata:
+    id: hint-subagent-02
+    category: hinted-delegation
+    tags: [hint, background, security]
+    source: subagents/test-cases.json
+  vars:
+    prompt: >
+      Run a background subagent to scan the entire codebase for security
+      vulnerabilities including hardcoded secrets, SQL injection patterns, and
+      XSS vectors. Write the report to ai-docs/security-audit.md
+  assert:
+    - type: contains
+      value: "security"
+      metric: "mentions-security"
+    - type: llm-rubric
+      value: >
+        The prompt requests a background subagent. The response must create a
+        Task call. Acceptable agents: general-purpose, code-analysis:detective,
+        dev:researcher, or dev:audit. Running the scan inline without a Task
+        call is a FAILURE.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "hinted-delegation-honored"
+
+# ---------------------------------------------------------------------------
+# GROUP: direct-handling  (simple tasks; NO Task call expected)
+# ---------------------------------------------------------------------------
+
+- description: "Simple version-number lookup should be handled directly"
+  metadata:
+    id: direct-simple-01
+    category: direct-handling
+    tags: [simple, quick]
+    source: subagents/test-cases.json
+  vars:
+    prompt: "What is the version number in plugins/dev/plugin.json?"
+  assert:
+    - type: llm-rubric
+      value: >
+        This is a trivially simple file-read question. The response should read
+        the file directly and state the version number. Creating a Task call for
+        something this simple is unnecessary overhead and counts as a FAILURE.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "direct-handling"
+
+- description: "Simple file-search should be handled directly"
+  metadata:
+    id: direct-simple-02
+    category: direct-handling
+    tags: [simple, search]
+    source: subagents/test-cases.json
+  vars:
+    prompt: "Find all files named plugin.json in this project"
+  assert:
+    - type: contains
+      value: "plugin.json"
+      metric: "mentions-plugin-json"
+    - type: llm-rubric
+      value: >
+        This is a simple glob/find task. The response should list the files
+        directly. Delegating to a Task agent for a task this simple is
+        unnecessary and counts as a FAILURE. Using the Explore tool is a
+        marginal acceptable alternative.
+      provider: anthropic:messages:claude-sonnet-4-6
+      metric: "direct-handling"

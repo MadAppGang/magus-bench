@@ -9,6 +9,7 @@ Each benchmark lives in its own directory with a dedicated README, test harness,
 | Benchmark | Description | Status |
 |-----------|-------------|--------|
 | [tech-writer-eval](./tech-writer-eval/) | 4-way blind documentation quality comparison: human reference vs bare Claude vs Claude+anti-slop vs Gemini Flash, judged by 7-model panel | Active |
+| [skill-routing-eval](./skill-routing-eval/) | Promptfoo benchmark testing Skill-tool vs Task-tool disambiguation, CLAUDE.md routing-table honoring, and spelling correctness across Sonnet and Haiku | Active |
 
 ## Prerequisites
 

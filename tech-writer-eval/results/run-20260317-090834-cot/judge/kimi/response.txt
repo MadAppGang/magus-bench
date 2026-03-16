@@ -1,0 +1,145 @@
+<thinking>
+**Sample A Analysis:**
+
+**Slop:** Very minimal. Writing is direct and technical. Phrases like "This matters because" and "The critical detail" are explanatory rather than slop. No marketing superlatives, corporate jargon, or AI preambles. The tone is confident and direct.
+
+**Writing Craft:** Excellent. Mix of short punchy sentences ("That's the point.") and longer explanatory ones. Active voice predominates. Precise verbs: "resolves," "returns," "overrides," "gates." Voice is authoritative without being arrogant.
+
+**Readability:** Excellent. Average sentence length under 25 words. Short paragraphs (<100 words). Good use of bullet points and numbered lists. Second-person address for instructions ("Write it as trigger conditions").
+
+**Structure:** Excellent. Clear H1→H2→H3 hierarchy. Metadata header present (Description, Audience, Prerequisites). Logical section ordering: concept → discovery → mechanism → chaining → types → lifecycle → quickstart → reference. Skip links provided.
+
+**Conciseness:** High information density. No filler paragraphs. The "Edge cases and gotchas" section is genuinely useful content, not padding. Every sentence advances understanding.
+
+**Accuracy:** Internally consistent. Technical claims about skill loading, TodoWrite behavior, frontmatter schema, and chaining mechanics align across sections. No contradictions.
+
+**Progressive Disclosure:** Excellent. Quick-start provided via skip link early. Concepts build logically from simple to complex. Reference material properly placed at end.
+
+**Diagrams:** Two Mermaid diagrams. Sequence diagram clearly shows invocation flow. Flowchart shows detailed phase gates. Both are well-labeled and genuinely aid understanding.
+
+**Overall:** Professional, trustworthy, and serves the reader well. Would publish as-is.
+
+---
+
+**Sample B Analysis:**
+
+**Slop:** Moderate. Word-level: "behavioral composition," "proactive skill loading," "divergent exploration," "durable contract," "unlock" (implied), "streamline" (implied). Structural: Uniform section lengths in Advanced Patterns (all similar size). Pattern: "Here is the complete lifecycle..." (throat-clearing), repetitive transition openers ("This is...", "This gives...", "This means...").
+
+**Writing Craft:** Functional but flat. Longer average sentence length. More passive voice: "skills are injected," "content is returned." Less punchy than A. Tables are well-constructed but prose is heavier.
+
+**Readability:** Moderate. Sentences tend toward 25-35 words. Paragraphs frequently exceed 100 words. Dense blocks of text in the lifecycle and chaining sections.
+
+**Structure:** Comprehensive but overwhelming. 11 sections in TOC. Good hierarchy but excessive depth. Metadata present. Quick-start buried at section 9.
+
+**Conciseness:** Low information density relative to length. Repetition: chains explained in frontmatter section, then again in chaining section, then again in lifecycle. The full lifecycle ASCII diagram is decorative padding—it takes 40+ lines but communicates what a simple list could.
+
+**Accuracy:** Internally consistent. Technical claims align across sections. No contradictions found.
+
+**Progressive Disclosure:** Poor. Essential quick-start buried under extensive conceptual material. Detail-heavy sections precede practical application.
+
+**Diagrams:** One massive ASCII flow diagram. Poor use of space—hard to read in terminal, mostly decorative lines. The diagram prioritizes aesthetics over information. Better as a simple numbered list.
+
+**Overall:** Comprehensive but verbose. The padding and diagram issue significantly reduce quality despite good coverage.
+
+---
+
+**Sample C Analysis:**
+
+**Slop:** Low. Direct imperative tone. "★ Insight" box at end approaches simulated profundity but is brief. Generally clean.
+
+**Writing Craft:** Good but terse. Short punchy sentences. Imperative style appropriate for reference. Active voice throughout. Lacks some explanatory connective tissue that would aid understanding.
+
+**Readability:** Excellent. Very short sentences. Brief paragraphs. Highly scannable. Second-person direct address ("Follow this process").
+
+**Structure:** Adequate. Good H2 hierarchy. Metadata present. Logical flow. Shallow coverage—many sections are just 1-2 paragraphs.
+
+**Conciseness:** Very concise, approaching terse. High density but sacrifices explanation. The 5-minute guide is genuinely quick, possibly too quick.
+
+**Accuracy:** **Major issue.** Claims "The Markdown body of the SKILL.md file becomes part of the system prompt for the duration of the task." Sample A explicitly states "skills are not system prompt injections. They arrive mid-conversation as tool results." These are contradictory technical claims about the same mechanism. Sample A's explanation is more detailed and convincing; Sample C appears to be incorrect.
+
+**Progressive Disclosure:** Good. Quick 5-minute guide present. Concepts layered appropriately.
+
+**Diagrams:** One basic Mermaid flowchart. Useful but minimal—just shows linear sequence.
+
+**Overall:** Too brief for the topic. The technical inaccuracy regarding system prompts vs tool results is significant.
+
+---
+
+**Sample D Analysis:**
+
+**Slop:** Minimal. "How does it work under the hood?" is slightly colloquial but appropriate for tutorial. Clean, professional technical writing. No marketing language.
+
+**Writing Craft:** Good. Clear instructional tone. Mix of sentence lengths. Active voice. Precise nouns and verbs.
+
+**Readability:** Excellent. Short paragraphs. Bulleted lists break up concepts. Code examples are readable.
+
+**Structure:** Good. Clear H1→H2→H3 progression. Logical ordering: concepts → file structure → manifest → code. **Missing metadata header** (no audience/prerequisites listed).
+
+**Conciseness:** High. No filler. Gets directly to three core concepts. Explains efficiently.
+
+**Accuracy:** Internally consistent. Code examples align with explanations. Claims about activation events and contribution points are coherent.
+
+**Progressive Disclosure:** Good. Starts with summary of three concepts. Moves to file structure, then manifest details, then entry file code. Logical progression from abstract to concrete.
+
+**Diagrams:** One ASCII file tree. Clear, useful, appropriately simple for the content.
+
+**Overall:** Solid professional documentation. Limited scope (basic tutorial vs comprehensive overview) but well-executed within that scope.
+
+---
+
+**Ranking Rationale:**
+
+Sample A is the clear winner: comprehensive yet concise, excellent diagrams, no slop, perfect structure. Sample D is well-crafted but narrower in scope. Sample B covers the right ground but is padded with corporate speak and has a terrible diagram. Sample C is too brief and contains a significant technical inaccuracy about system prompts vs tool results.
+
+</thinking>
+
+{
+  "scores": {
+    "sample_a": {
+      "slop": 9,
+      "writing_craft": 9,
+      "readability": 9,
+      "structure": 9,
+      "conciseness": 9,
+      "accuracy": 9,
+      "disclosure": 9,
+      "diagrams": 9,
+      "overall": 9
+    },
+    "sample_b": {
+      "slop": 6,
+      "writing_craft": 6,
+      "readability": 6,
+      "structure": 7,
+      "conciseness": 4,
+      "accuracy": 8,
+      "disclosure": 6,
+      "diagrams": 3,
+      "overall": 6
+    },
+    "sample_c": {
+      "slop": 8,
+      "writing_craft": 7,
+      "readability": 9,
+      "structure": 7,
+      "conciseness": 8,
+      "accuracy": 5,
+      "disclosure": 7,
+      "diagrams": 6,
+      "overall": 6
+    },
+    "sample_d": {
+      "slop": 9,
+      "writing_craft": 8,
+      "readability": 9,
+      "structure": 8,
+      "conciseness": 9,
+      "accuracy": 9,
+      "disclosure": 8,
+      "diagrams": 7,
+      "overall": 8
+    }
+  },
+  "ranking": ["A", "D", "B", "C"],
+  "reasoning": "Sample A excels with dense, precise technical writing, useful Mermaid diagrams, and no AI slop. Sample D is clean and professional but narrower in scope. Sample B is comprehensive yet verbose, marred by corporate jargon and a decorative ASCII diagram. Sample C is fatally undermined by a technical inaccuracy (claiming skills become 'part of the system prompt' contrary to the tool-result mechanism) and insufficient depth."
+}

@@ -1,0 +1,12 @@
+{
+  "test_id": "judge-internal",
+  "model": "internal",
+  "started_at": "2026-03-16T22:08:40Z",
+  "completed_at": "2026-03-16T22:11:36Z",
+  "duration_seconds": 176,
+  "exit_code": 0,
+  "timeout_seconds": 600,
+  "claudish_flags": "-y --json --debug --log-level debug",
+  "prompt_file": "results/run-20260317-090834-cot/judge-prompt-internal.md",
+  "framework_version": "1.0.0"
+}
