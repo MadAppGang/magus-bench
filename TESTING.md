@@ -326,6 +326,26 @@ cd skill-routing-eval
 
 The generator produces 6 variant types per seed: `rephrased`, `edge_case`, `adversarial`, `context_shift`, `terse`, `verbose`. Near-duplicates are dropped using Jaccard similarity (threshold: 0.80 on tokens longer than 3 characters). Output lands in `generated/test-cases-generated.yaml` (promptfoo format) and `generated/test-cases-generated.json` (autotest format).
 
+### Running against real Claude Code CLI
+
+The generated cases can be run against the real `claude -p` CLI via the `routing-synthetic` autotest suite in the sibling `claude-code` repo. This tests actual plugin/skill/CLAUDE.md behavior, not just prompt-level responses.
+
+```bash
+# One-step: generate → import → run
+./skill-routing-eval/run-autotest.sh --dry-run
+
+# Run specific cases
+./skill-routing-eval/run-autotest.sh --cases "skill-claudemem-explicit-01-var-01,explicit-researcher-01-var-01"
+
+# Run with parallel execution
+./skill-routing-eval/run-autotest.sh --parallel 3
+
+# Regenerate cases first
+./skill-routing-eval/run-autotest.sh --generate --count 15
+```
+
+The bridge script calls `../claude-code/autotest/routing-synthetic/run.sh`, which uses the shared autotest framework (`runner-base.sh` + `execute-test.sh`). Results land in `../claude-code/autotest/routing-synthetic/results/`.
+
 ---
 
 ## CI pipeline
