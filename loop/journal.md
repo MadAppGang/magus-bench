@@ -72,3 +72,69 @@ Full votes: loop/iteration-1/analyze/
 - (no cumulative baseline data yet)
 
 **Next iteration focus**: Implementation error: tech-writer-eval run.sh failed with co; Implementation error: tech-writer-eval run.sh failed with co; Implementation error: promptfoo eval failed (code 100): tele
+
+---
+
+## Iteration 2 — 2026-03-17 08:03:29.901 UTC
+
+**Git HEAD at start**: (see git log)
+**Baseline at start**:
+- tech-writer-eval: techwriter weighted=8.3, borda=15, Friedman p=?
+
+### Phase 1: Research
+
+**Agent A (methodology)**: [agent error] claude -p exited with code 143. stderr: 
+Full brief: loop/iteration-2/research/agent-a-brief.md
+
+**Agent B (prompts/rubrics)**: `★ Coaching ────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-b-brief.md
+
+**Agent C (structure/topics)**: Now I have all the context needed. Here are the structural improvement proposals for iteration 2:
+Full brief: loop/iteration-2/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Target | Risk | Expected Delta |
+|---|-------|--------|------|----------------|
+| A | Calibrate Slop and Writing Craft Rubric Anchors in judge-template-4way.md | tech-writer-eval | low | (see approach doc) |
+| B | Harden skill-routing-eval with Deterministic Assertions and Expand Thin Categori | skill-routing-eval | low | (see approach doc) |
+| C | Add Second Evaluation Topic (Vite Plugin API) and Multi-Topic Statistical Analys | tech-writer-eval | medium | (see approach doc) |
+
+Full plan: loop/iteration-2/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Results archived: loop/iteration-2/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Reviewer Vote | Consensus |
+|----------|--------------|-----------|
+| A | drop (high) | DROP (auto) |
+| B | drop (high) | DROP (auto) |
+| C | drop (high) | DROP (auto) |
+
+Full votes: loop/iteration-2/analyze/
+
+### Phase 5: Decision
+
+**Merged**:
+- (none)
+
+**Dropped**:
+- loop/iter-2/approach-a: Implementation error: tech-writer-eval run.sh failed with code 143. stderr: 
+- loop/iter-2/approach-b: Implementation error: promptfoo eval failed (code 100): telemetry.shutdown() timed out during shutdo
+- loop/iter-2/approach-c: Implementation error: tech-writer-eval run.sh failed with code 143. stderr: 
+
+**New baseline captured**: no merges — baseline unchanged
+
+**Cumulative metrics**:
+- (no cumulative baseline data yet)
+
+**Next iteration focus**: Implementation error: tech-writer-eval run.sh failed with co; Implementation error: promptfoo eval failed (code 100): tele; Implementation error: tech-writer-eval run.sh failed with co
