@@ -63,13 +63,15 @@ interface ShellResult {
   stderr: string;
 }
 
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes of no output = hung
+
 async function spawnShell(
   args: string[],
   options: {
     cwd?: string;
     allowFailure?: boolean;
     env?: Record<string, string | undefined>;
-    timeout?: number;
+    idleTimeout?: number; // ms of silence before killing (default: 10 min)
   } = {}
 ): Promise<ShellResult> {
   const proc = Bun.spawn(args, {
@@ -79,26 +81,54 @@ async function spawnShell(
     env: options.env ?? process.env,
   });
 
-  // Optional timeout: kill process if it exceeds the limit
-  let timedOut = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  if (options.timeout) {
-    timer = setTimeout(() => {
-      timedOut = true;
+  const idleMs = options.idleTimeout ?? IDLE_TIMEOUT_MS;
+  let lastActivity = Date.now();
+  let idleKilled = false;
+
+  // Watchdog: check every 30s if we've gone idle
+  const watchdog = setInterval(() => {
+    if (Date.now() - lastActivity > idleMs) {
+      idleKilled = true;
+      const idleSec = Math.round((Date.now() - lastActivity) / 1000);
+      console.error(`[watchdog] No output for ${idleSec}s — killing: ${args.slice(0, 3).join(" ")}`);
       proc.kill("SIGTERM");
-    }, options.timeout);
-  }
+      clearInterval(watchdog);
+    }
+  }, 30_000);
 
-  const [stdout, stderr] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
+  // Stream stdout/stderr, collecting output and resetting the idle timer on each chunk
+  const stdoutChunks: string[] = [];
+  const stderrChunks: string[] = [];
+
+  const readStream = async (
+    stream: ReadableStream<Uint8Array> | null,
+    chunks: string[]
+  ): Promise<void> => {
+    if (!stream) return;
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      lastActivity = Date.now();
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+  };
+
+  await Promise.all([
+    readStream(proc.stdout as ReadableStream<Uint8Array>, stdoutChunks),
+    readStream(proc.stderr as ReadableStream<Uint8Array>, stderrChunks),
   ]);
-  const code = await proc.exited;
-  if (timer) clearTimeout(timer);
 
-  if (timedOut) {
+  const code = await proc.exited;
+  clearInterval(watchdog);
+
+  const stdout = stdoutChunks.join("");
+  const stderr = stderrChunks.join("");
+
+  if (idleKilled) {
     throw new Error(
-      `Command timed out after ${options.timeout! / 1000}s: ${args.join(" ")}\nstderr: ${stderr.slice(0, 500)}`
+      `Process idle-killed after ${idleMs / 1000}s of no output: ${args.join(" ")}\nstderr: ${stderr.slice(0, 500)}`
     );
   }
 
@@ -415,15 +445,13 @@ async function runTechWriterEval(
     "--output-dir",
     outputDir,
     "--compare-baseline",
-    "--timeout",
-    "900",
   ];
 
   const result = await spawnShell(args, {
     cwd: wtPath,
     allowFailure: true,
     env: { ...process.env, CLAUDECODE: undefined },
-    timeout: 1200_000, // 20 min outer timeout for the full eval run
+    // Smart watchdog: kills only if no output for 10 min (default)
   });
 
   // code 1 = regression detected (compare-baseline exits 1)
