@@ -9,6 +9,7 @@
  * Usage:
  *   bun loop/loop.ts [--iteration N] [--resume-from-phase <name>]
  *                    [--max-iterations N] [--runs N] [--dry-run]
+ *                    [--experiment <id>]
  *
  * Options:
  *   --iteration N           Start at iteration N (overrides state.json)
@@ -16,6 +17,7 @@
  *   --max-iterations N      Stop after iteration N (absolute cap)
  *   --runs N                Run exactly N iterations from current position
  *   --dry-run               Stub all agent calls and eval runs
+ *   --experiment <id>       Override experiment_id from config.json
  */
 
 import { join } from "node:path";
@@ -27,83 +29,129 @@ import {
   mkdirSync,
 } from "node:fs";
 import { readState, writeState } from "./lib/state.ts";
+import { getActiveExperiment } from "./engine/plugin-registry.ts";
+import type { Experiment } from "./engine/types.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
+const LOOP_DIR = join(REPO_ROOT, "loop");
 
 // ---------------------------------------------------------------------------
-// Baseline summary helpers
+// CLI arg parsing
 // ---------------------------------------------------------------------------
 
-function readBaselineSummary(): string {
-  const twPath = join(REPO_ROOT, "tech-writer-eval", "baselines", "latest", "scores.json");
-  const srPath = join(REPO_ROOT, "skill-routing-eval", "results", "latest.json");
-
-  const parts: string[] = [];
-
-  // Tech-writer-eval
-  try {
-    if (existsSync(twPath)) {
-      const tw = JSON.parse(readFileSync(twPath, "utf-8")) as Record<string, unknown>;
-      const ws = tw.weighted_scores as Record<string, number> | undefined;
-      const bc = tw.borda_counts as Record<string, number> | undefined;
-      const stats = tw.statistical_tests as Record<string, unknown> | undefined;
-      const fp = stats?.friedman_p ?? (tw.friedman_p as number | undefined);
-      const weighted = ws?.techwriter;
-      const borda = bc?.techwriter;
-      const twParts: string[] = ["TW"];
-      if (weighted != null) twParts.push(`techwriter=${weighted.toFixed(1)}`);
-      if (borda != null) twParts.push(`borda=${borda}`);
-      if (fp != null) twParts.push(`p=${(fp as number).toFixed(2)}`);
-      parts.push(twParts.join(" "));
-    } else {
-      parts.push("TW (no baseline)");
-    }
-  } catch {
-    parts.push("TW (read error)");
-  }
-
-  // Skill-routing-eval
-  try {
-    if (existsSync(srPath)) {
-      const sr = JSON.parse(readFileSync(srPath, "utf-8")) as Record<string, unknown>;
-      const results = (sr.results as Record<string, unknown>) ?? sr;
-      const stats = results.stats as Record<string, unknown> | undefined;
-      if (stats) {
-        const s = (stats.successes as number) ?? 0;
-        const f = (stats.failures as number) ?? 0;
-        const t = s + f;
-        parts.push(`SR pass=${t > 0 ? Math.round((s / t) * 100) : "?"}% (${s}/${t})`);
-      } else {
-        parts.push("SR (no stats)");
-      }
-    } else {
-      parts.push("SR (no baseline)");
-    }
-  } catch {
-    parts.push("SR (read error)");
-  }
-
-  return parts.join(" | ");
+interface LoopArgs {
+  iteration: number | null;
+  resumeFromPhase: string | null;
+  maxIterations: number | null;
+  runs: number | null;
+  dryRun: boolean;
+  experiment: string | null;
 }
 
-function formatIterationOutcome(iteration: number): string {
-  const summaryPath = join(LOOP_DIR, `iteration-${iteration}`, "decision", "decision-summary.json");
-  if (!existsSync(summaryPath)) return `Iteration ${iteration} result: (no decision summary)`;
+function parseArgs(argv: string[]): LoopArgs {
+  const args: LoopArgs = {
+    iteration: null,
+    resumeFromPhase: null,
+    maxIterations: null,
+    runs: null,
+    dryRun: false,
+    experiment: null,
+  };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--iteration" && argv[i + 1]) {
+      args.iteration = parseInt(argv[i + 1], 10);
+      i++;
+    } else if (argv[i] === "--resume-from-phase" && argv[i + 1]) {
+      args.resumeFromPhase = argv[i + 1];
+      i++;
+    } else if (argv[i] === "--max-iterations" && argv[i + 1]) {
+      args.maxIterations = parseInt(argv[i + 1], 10);
+      i++;
+    } else if (argv[i] === "--runs" && argv[i + 1]) {
+      args.runs = parseInt(argv[i + 1], 10);
+      i++;
+    } else if (argv[i] === "--dry-run") {
+      args.dryRun = true;
+    } else if (argv[i] === "--experiment" && argv[i + 1]) {
+      args.experiment = argv[i + 1];
+      i++;
+    }
+  }
+  return args;
+}
+
+// ---------------------------------------------------------------------------
+// Config loading
+// ---------------------------------------------------------------------------
+
+interface LoopConfig {
+  stall_threshold_consecutive_iterations: number;
+  max_iterations: number | null;
+  estimated_cost_per_iteration_usd?: number;
+  experiment_id?: string;
+  success_condition: {
+    friedman_p_lt?: number;
+    sustained_iterations: number;
+  } | null;
+}
+
+function loadConfig(): LoopConfig {
+  const configPath = join(LOOP_DIR, "config.json");
+  if (!existsSync(configPath)) {
+    return {
+      stall_threshold_consecutive_iterations: 3,
+      max_iterations: null,
+      success_condition: null,
+    };
+  }
+  try {
+    return JSON.parse(readFileSync(configPath, "utf-8")) as LoopConfig;
+  } catch {
+    console.warn("[loop] config.json parse error — using defaults");
+    return {
+      stall_threshold_consecutive_iterations: 3,
+      max_iterations: null,
+      success_condition: null,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Iteration outcome formatter (uses experiment plugin)
+// ---------------------------------------------------------------------------
+
+function formatIterationOutcome(
+  iteration: number,
+  experiment: Experiment
+): string {
+  const summaryPath = join(
+    LOOP_DIR,
+    `iteration-${iteration}`,
+    "decision",
+    "decision-summary.json"
+  );
+  if (!existsSync(summaryPath)) {
+    return `Iteration ${iteration} result: (no decision summary)`;
+  }
 
   try {
     const summary = JSON.parse(readFileSync(summaryPath, "utf-8")) as {
       merged: string[];
       dropped: string[];
+      new_baseline?: Record<string, unknown>;
     };
     const mergedCount = summary.merged?.length ?? 0;
-    const total = (summary.merged?.length ?? 0) + (summary.dropped?.length ?? 0);
-    const newBaseline = readBaselineSummary();
-    return `Iteration ${iteration} result: merged ${mergedCount}/${total} approaches | baseline now: ${newBaseline}`;
+    const total =
+      (summary.merged?.length ?? 0) + (summary.dropped?.length ?? 0);
+    // Use plugin.formatMetrics for the baseline display if available
+    const baselineSuffix = summary.new_baseline
+      ? `baseline now: ${experiment.formatMetrics(summary.new_baseline as Record<string, number | string | boolean | null>)}`
+      : "baseline unchanged";
+    return `Iteration ${iteration} result: merged ${mergedCount}/${total} approaches | ${baselineSuffix}`;
   } catch {
     return `Iteration ${iteration} result: (could not read decision summary)`;
   }
 }
-const LOOP_DIR = join(REPO_ROOT, "loop");
 
 // ---------------------------------------------------------------------------
 // Phase definitions
@@ -155,80 +203,6 @@ const PHASE_ORDER: Record<string, number> = Object.fromEntries(
 );
 
 // ---------------------------------------------------------------------------
-// CLI arg parsing
-// ---------------------------------------------------------------------------
-
-interface LoopArgs {
-  iteration: number | null;
-  resumeFromPhase: string | null;
-  maxIterations: number | null;
-  runs: number | null;
-  dryRun: boolean;
-}
-
-function parseArgs(argv: string[]): LoopArgs {
-  const args: LoopArgs = {
-    iteration: null,
-    resumeFromPhase: null,
-    maxIterations: null,
-    runs: null,
-    dryRun: false,
-  };
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--iteration" && argv[i + 1]) {
-      args.iteration = parseInt(argv[i + 1], 10);
-      i++;
-    } else if (argv[i] === "--resume-from-phase" && argv[i + 1]) {
-      args.resumeFromPhase = argv[i + 1];
-      i++;
-    } else if (argv[i] === "--max-iterations" && argv[i + 1]) {
-      args.maxIterations = parseInt(argv[i + 1], 10);
-      i++;
-    } else if (argv[i] === "--runs" && argv[i + 1]) {
-      args.runs = parseInt(argv[i + 1], 10);
-      i++;
-    } else if (argv[i] === "--dry-run") {
-      args.dryRun = true;
-    }
-  }
-  return args;
-}
-
-// ---------------------------------------------------------------------------
-// Config loading
-// ---------------------------------------------------------------------------
-
-interface LoopConfig {
-  stall_threshold_consecutive_iterations: number;
-  max_iterations: number | null;
-  success_condition: {
-    friedman_p_lt: number;
-    sustained_iterations: number;
-  } | null;
-}
-
-function loadConfig(): LoopConfig {
-  const configPath = join(LOOP_DIR, "config.json");
-  if (!existsSync(configPath)) {
-    return {
-      stall_threshold_consecutive_iterations: 3,
-      max_iterations: null,
-      success_condition: null,
-    };
-  }
-  try {
-    return JSON.parse(readFileSync(configPath, "utf-8")) as LoopConfig;
-  } catch {
-    console.warn("[loop] config.json parse error — using defaults");
-    return {
-      stall_threshold_consecutive_iterations: 3,
-      max_iterations: null,
-      success_condition: null,
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Decision summary reader (for stall detection)
 // ---------------------------------------------------------------------------
 
@@ -254,24 +228,6 @@ function readDecisionSummary(iteration: number): DecisionSummary | null {
 }
 
 // ---------------------------------------------------------------------------
-// Success condition check
-// ---------------------------------------------------------------------------
-
-function checkSuccessCondition(
-  config: LoopConfig,
-  consecutiveSuccessCount: number
-): boolean {
-  if (!config.success_condition) return false;
-  const { sustained_iterations } = config.success_condition;
-  // The orchestrator tracks whether the Friedman p criterion was met;
-  // here we delegate to state tracking. Simple proxy: if we have
-  // consecutive_no_improvement_count === 0 for sustained_iterations, it's not enough;
-  // success is only declared when the reviewer pipeline explicitly signals it.
-  // For v1, we don't auto-detect success — just track via STOP sentinel.
-  return consecutiveSuccessCount >= sustained_iterations;
-}
-
-// ---------------------------------------------------------------------------
 // Append a simple line to journal
 // ---------------------------------------------------------------------------
 
@@ -279,7 +235,9 @@ function appendToJournal(message: string): void {
   const journalPath = join(LOOP_DIR, "journal.md");
   const line = `\n<!-- ${new Date().toISOString()} --> ${message}\n`;
   try {
-    import("node:fs").then((fs) => fs.appendFileSync(journalPath, line, "utf-8"));
+    import("node:fs").then((fs) =>
+      fs.appendFileSync(journalPath, line, "utf-8")
+    );
   } catch {
     // Ignore journal append failures in the orchestrator
   }
@@ -306,7 +264,8 @@ async function pruneStaleWorktrees(): Promise<void> {
 async function runPhaseScript(
   scriptRelPath: string,
   iteration: number,
-  dryRun: boolean
+  dryRun: boolean,
+  experimentId: string
 ): Promise<void> {
   const scriptPath = join(LOOP_DIR, scriptRelPath);
   const spawnArgs = [
@@ -314,6 +273,8 @@ async function runPhaseScript(
     scriptPath,
     "--iteration",
     String(iteration),
+    "--experiment",
+    experimentId,
   ];
   if (dryRun) spawnArgs.push("--dry-run");
 
@@ -335,7 +296,7 @@ async function runPhaseScript(
 // Cost estimate log
 // ---------------------------------------------------------------------------
 
-function logEstimatedCost(config: LoopConfig & { estimated_cost_per_iteration_usd?: number }): void {
+function logEstimatedCost(config: LoopConfig): void {
   const cost = config.estimated_cost_per_iteration_usd ?? 0.25;
   console.log(`[loop] Estimated cost for this iteration: ~$${cost.toFixed(2)}`);
 }
@@ -367,8 +328,27 @@ async function main(): Promise<void> {
   console.log(`[loop] LOCK written: ${lockPath}`);
 
   // Load config
-  const config = loadConfig() as LoopConfig & { estimated_cost_per_iteration_usd?: number };
+  const config = loadConfig();
   const stallThreshold = config.stall_threshold_consecutive_iterations ?? 3;
+
+  // Load experiment plugin
+  // --experiment CLI arg overrides config.json experiment_id
+  let experiment: Experiment;
+  try {
+    if (args.experiment) {
+      const { loadExperiment } = await import("./engine/plugin-registry.ts");
+      experiment = await loadExperiment(args.experiment);
+    } else {
+      experiment = await getActiveExperiment(LOOP_DIR);
+    }
+    console.log(`[loop] Experiment plugin loaded: ${experiment.name}`);
+  } catch (err) {
+    console.error("[loop] Failed to load experiment plugin:", err);
+    unlinkSync(lockPath);
+    process.exit(1);
+  }
+
+  const experimentId = experiment.name;
 
   // Effective max iterations: CLI overrides config
   let effectiveMaxIterations: number | null =
@@ -389,23 +369,34 @@ async function main(): Promise<void> {
       if (effectiveMaxIterations === null || runsMax < effectiveMaxIterations) {
         effectiveMaxIterations = runsMax;
       }
-      console.log(`[loop] Will run ${args.runs} iteration(s): ${iteration}..${runsMax}`);
+      console.log(
+        `[loop] Will run ${args.runs} iteration(s): ${iteration}..${runsMax}`
+      );
     }
 
     console.log(`[loop] Starting at iteration ${iteration}`);
+
+    // Show baseline at startup using plugin
+    const baselineSummary = await experiment.formatBaseline();
+    console.log(`[loop] ${baselineSummary}`);
 
     // Main loop
     while (true) {
       // Check STOP sentinel (FR-7.1)
       const stopPath = join(LOOP_DIR, "STOP");
       if (existsSync(stopPath)) {
-        console.log(`[loop] STOP sentinel found — exiting after iteration ${iteration}`);
+        console.log(
+          `[loop] STOP sentinel found — exiting after iteration ${iteration}`
+        );
         appendToJournal(`Loop stopped by STOP file at iteration ${iteration}`);
         break;
       }
 
       // Check max-iterations (FR-7.4)
-      if (effectiveMaxIterations !== null && iteration > effectiveMaxIterations) {
+      if (
+        effectiveMaxIterations !== null &&
+        iteration > effectiveMaxIterations
+      ) {
         console.log(
           `[loop] Reached max iterations (${effectiveMaxIterations}) — stopping`
         );
@@ -413,7 +404,8 @@ async function main(): Promise<void> {
       }
 
       console.log(`\n[loop] ====== ITERATION ${iteration} ======`);
-      console.log(`[loop] Baseline: ${readBaselineSummary()}`);
+      const iterBaseline = await experiment.formatBaseline();
+      console.log(`[loop] ${iterBaseline}`);
       logEstimatedCost(config);
 
       // Ensure iteration directory exists
@@ -465,7 +457,12 @@ async function main(): Promise<void> {
         // Run the phase
         console.log(`[loop] Running phase: ${phase.name}`);
         try {
-          await runPhaseScript(phase.script, iteration, args.dryRun);
+          await runPhaseScript(
+            phase.script,
+            iteration,
+            args.dryRun,
+            experimentId
+          );
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.error(`[loop] Phase ${phase.name} failed: ${errMsg}`);
@@ -474,7 +471,9 @@ async function main(): Promise<void> {
           if (phase.name !== "decide" && phase.name !== "journal") {
             throw err;
           } else {
-            console.warn(`[loop] Non-fatal phase failure (${phase.name}) — continuing`);
+            console.warn(
+              `[loop] Non-fatal phase failure (${phase.name}) — continuing`
+            );
           }
         }
 
@@ -492,7 +491,7 @@ async function main(): Promise<void> {
       args.resumeFromPhase = null;
 
       // Print iteration outcome summary
-      console.log(`[loop] ${formatIterationOutcome(iteration)}`);
+      console.log(`[loop] ${formatIterationOutcome(iteration, experiment)}`);
 
       // Check stall condition (FR-5.3, FR-5.4)
       const summary = readDecisionSummary(iteration);
@@ -521,7 +520,7 @@ async function main(): Promise<void> {
       // Check success condition (from config)
       // v1: only explicit STOP sentinel; success condition is informational
       if (config.success_condition) {
-        // Could check Friedman p here in future; skip for v1
+        // Could check plugin metrics here in future; skip for v1
       }
 
       // Advance iteration

@@ -3,11 +3,17 @@
  * Phase 1: Research
  * Spawns 3 parallel research agents (methodology, prompts/rubrics, structure)
  * and writes their briefs to loop/iteration-N/research/
+ *
+ * Now experiment-agnostic: reads contextFiles, changeableFiles, researchHints,
+ * and dependentVariables from the active experiment plugin, and injects them
+ * into agent templates as generic variables.
  */
 
 import { join } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnAgent } from "../lib/agent.ts";
+import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
+import { HypothesisRegistry } from "../engine/hypothesis.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -16,80 +22,38 @@ const LOOP_DIR = join(REPO_ROOT, "loop");
 // CLI arg parsing
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv: string[]): { iteration: number; dryRun: boolean } {
+function parseArgs(argv: string[]): {
+  iteration: number;
+  dryRun: boolean;
+  experiment: string | null;
+} {
   let iteration = 1;
   let dryRun = false;
+  let experiment: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--iteration" && argv[i + 1]) {
       iteration = parseInt(argv[i + 1], 10);
       i++;
     } else if (argv[i] === "--dry-run") {
       dryRun = true;
+    } else if (argv[i] === "--experiment" && argv[i + 1]) {
+      experiment = argv[i + 1];
+      i++;
     }
   }
-  return { iteration, dryRun };
+  return { iteration, dryRun, experiment };
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function readJSON(filePath: string): unknown {
+function readFileOrEmpty(filePath: string): string {
   try {
-    return JSON.parse(readFileSync(filePath, "utf-8"));
+    return readFileSync(filePath, "utf-8");
   } catch {
-    return null;
+    return "";
   }
-}
-
-function formatBaselineMetrics(
-  twBaseline: unknown,
-  srBaseline: unknown
-): string {
-  const lines: string[] = [];
-
-  if (twBaseline && typeof twBaseline === "object") {
-    const tw = twBaseline as Record<string, unknown>;
-    const weighted = tw.weighted_scores as Record<string, number> | undefined;
-    const borda = tw.borda_counts as Record<string, number> | undefined;
-    const friedman = tw.statistical_tests as Record<string, unknown> | undefined;
-
-    lines.push("## tech-writer-eval baseline");
-    if (weighted) {
-      lines.push(`- Weighted scores: ${JSON.stringify(weighted)}`);
-    }
-    if (borda) {
-      lines.push(`- Borda counts: ${JSON.stringify(borda)}`);
-    }
-    if (friedman && "friedman_p" in friedman) {
-      lines.push(`- Friedman p: ${friedman.friedman_p}`);
-    }
-  } else {
-    lines.push("## tech-writer-eval baseline: NOT AVAILABLE");
-  }
-
-  lines.push("");
-
-  if (srBaseline && typeof srBaseline === "object") {
-    const sr = srBaseline as Record<string, unknown>;
-    // promptfoo results/latest.json structure
-    const results = (sr.results as Record<string, unknown>) ?? sr;
-    const stats = results.stats as Record<string, unknown> | undefined;
-    if (stats) {
-      const successes = (stats.successes as number) ?? 0;
-      const failures = (stats.failures as number) ?? 0;
-      const total = successes + failures;
-      const passRate = total > 0 ? (successes / total).toFixed(3) : "unknown";
-      lines.push("## skill-routing-eval baseline");
-      lines.push(`- Pass rate: ${passRate} (${successes}/${total})`);
-    } else {
-      lines.push("## skill-routing-eval baseline: stats not parsed");
-    }
-  } else {
-    lines.push("## skill-routing-eval baseline: NOT AVAILABLE");
-  }
-
-  return lines.join("\n");
 }
 
 function readPreviousRejectedCandidates(
@@ -109,7 +73,8 @@ function readPreviousRejectedCandidates(
       dropped?: string[];
     };
     const dropped = summary.dropped ?? [];
-    if (dropped.length === 0) return "(all approaches merged — no rejected candidates)";
+    if (dropped.length === 0)
+      return "(all approaches merged — no rejected candidates)";
     return `Dropped approaches from iteration ${iteration - 1}: ${dropped.join(", ")}`;
   } catch {
     return "(could not read prior decision summary)";
@@ -147,7 +112,10 @@ function extractBriefTitle(content: string): string {
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.startsWith("#")) {
-      return trimmed.replace(/^#+\s*/, "").trim().slice(0, 100);
+      return trimmed
+        .replace(/^#+\s*/, "")
+        .trim()
+        .slice(0, 100);
     }
   }
   // Fallback: first non-empty line
@@ -162,73 +130,104 @@ function extractBriefTitle(content: string): string {
 // Dry-run stubs
 // ---------------------------------------------------------------------------
 
-function makeDryRunBriefA(iteration: number): string {
+function makeDryRunBriefA(
+  iteration: number,
+  experimentName: string,
+  changeableFiles: string[]
+): string {
   return `# Research Brief — Agent A (Methodology) [DRY RUN]
 
 **Iteration**: ${iteration}
+**Experiment**: ${experimentName}
 
 ## Proposed Improvements
 
-### 1. Add a second evaluation topic for statistical power
-- **Files**: tech-writer-eval/test-cases.json
-- **Mechanism**: More judge data points (14 vs 7) dramatically improves Friedman test power
-- **Expected impact**: Friedman p likely to drop below 0.3
-- **Risk**: Requires reference doc selection; medium effort
+### 1. Increase sample size for statistical power
+- **Files**: ${changeableFiles[0] ?? "(see changeable files)"}
+- **Mechanism**: More data points improve statistical test power
+- **Expected impact**: Lower Friedman p / higher pass rate
+- **Risk**: medium
 
-### 2. Increase judge diversity via temperature variation
-- **Files**: tech-writer-eval/prompts/judge-template-4way.md
-- **Mechanism**: Running judges at different temperatures reduces inter-judge correlation
-- **Expected impact**: Bootstrap CI narrows by ~0.15
-- **Risk**: May introduce inconsistency; low risk
+### 2. Improve diversity in evaluation methodology
+- **Files**: ${changeableFiles[1] ?? changeableFiles[0] ?? "(see changeable files)"}
+- **Mechanism**: Diverse evaluators reduce systematic bias
+- **Expected impact**: Reduced variance in metrics
+- **Risk**: low
 
 (dry-run brief — no agent invoked)
 `;
 }
 
-function makeDryRunBriefB(iteration: number): string {
+function makeDryRunBriefB(
+  iteration: number,
+  experimentName: string,
+  changeableFiles: string[]
+): string {
   return `# Research Brief — Agent B (Prompts/Rubrics) [DRY RUN]
 
 **Iteration**: ${iteration}
+**Experiment**: ${experimentName}
 
 ## Proposed Improvements
 
-### 1. Strengthen criteria specificity in judge template
-- **Files**: tech-writer-eval/prompts/judge-template-4way.md
-- **Mechanism**: More precise rubric anchors reduce judge variance
-- **Expected impact**: Weighted score delta +0.1 to +0.2
-- **Risk**: Low — additive change
+### 1. Strengthen criteria specificity
+- **Files**: ${changeableFiles[0] ?? "(see changeable files)"}
+- **Mechanism**: More precise rubric anchors reduce variance
+- **Expected impact**: Metric delta +0.1 to +0.2
+- **Risk**: low
 
-### 2. Add chain-of-thought instruction to generation prompt
-- **Files**: tech-writer-eval/prompts/generate-techwriter.md
-- **Mechanism**: CoT reasoning may improve structure and completeness
-- **Expected impact**: Borda delta +1 to +2
-- **Risk**: Low
+### 2. Add chain-of-thought instruction
+- **Files**: ${changeableFiles[1] ?? changeableFiles[0] ?? "(see changeable files)"}
+- **Mechanism**: CoT reasoning improves structure and completeness
+- **Expected impact**: Metric delta +1 to +2
+- **Risk**: low
 
 (dry-run brief — no agent invoked)
 `;
 }
 
-function makeDryRunBriefC(iteration: number): string {
+function makeDryRunBriefC(
+  iteration: number,
+  experimentName: string,
+  changeableFiles: string[]
+): string {
   return `# Research Brief — Agent C (Structure) [DRY RUN]
 
 **Iteration**: ${iteration}
+**Experiment**: ${experimentName}
 
 ## Proposed Improvements
 
-### 1. Add skill-routing test cases for underrepresented categories
-- **Files**: skill-routing-eval/test-cases.yaml
-- **Mechanism**: Categories with 0% pass rate need better coverage to detect improvements
-- **Expected impact**: Pass rate delta +0.05 to +0.10
-- **Risk**: Low
+### 1. Add coverage for underrepresented categories
+- **Files**: ${changeableFiles[0] ?? "(see changeable files)"}
+- **Mechanism**: Better coverage detects improvements in edge cases
+- **Expected impact**: Metric delta +0.05 to +0.10
+- **Risk**: low
 
-### 2. Restructure promptfoo config for better category grouping
-- **Files**: skill-routing-eval/promptfooconfig.yaml
-- **Mechanism**: Grouped categories allow more targeted metric reporting
+### 2. Restructure for better category grouping
+- **Files**: ${changeableFiles[1] ?? changeableFiles[0] ?? "(see changeable files)"}
+- **Mechanism**: Grouped categories allow targeted metric reporting
 - **Expected impact**: Clearer signal for category-level decisions
-- **Risk**: Low
+- **Risk**: low
 
 (dry-run brief — no agent invoked)
 `;
+}
+
+// ---------------------------------------------------------------------------
+// Context file loader
+// ---------------------------------------------------------------------------
+
+function loadContextFiles(
+  contextFiles: string[],
+  repoRoot: string
+): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const relPath of contextFiles) {
+    const absPath = join(repoRoot, relPath);
+    result[relPath] = readFileOrEmpty(absPath);
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -236,8 +235,12 @@ function makeDryRunBriefC(iteration: number): string {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { iteration, dryRun } = parseArgs(process.argv.slice(2));
-  console.log(`[phase-1] Starting research phase for iteration ${iteration}${dryRun ? " (dry-run)" : ""}`);
+  const { iteration, dryRun, experiment: experimentArg } = parseArgs(
+    process.argv.slice(2)
+  );
+  console.log(
+    `[phase-1] Starting research phase for iteration ${iteration}${dryRun ? " (dry-run)" : ""}`
+  );
 
   const outDir = join(LOOP_DIR, `iteration-${iteration}`, "research");
   mkdirSync(outDir, { recursive: true });
@@ -256,92 +259,97 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // Load experiment plugin
+  const experiment = experimentArg
+    ? await loadExperiment(experimentArg)
+    : await getActiveExperiment(LOOP_DIR);
+  console.log(`[phase-1] Experiment: ${experiment.name}`);
+
+  // Load hypothesis knowledge from registry
+  const registry = new HypothesisRegistry(LOOP_DIR);
+  const hypothesisKnowledge = registry.getKnowledgeSummary(10);
+
   if (dryRun) {
     console.log("[phase-1] Dry-run: writing stub research briefs");
-    const dryA = makeDryRunBriefA(iteration);
-    const dryB = makeDryRunBriefB(iteration);
-    const dryC = makeDryRunBriefC(iteration);
+    const dryA = makeDryRunBriefA(
+      iteration,
+      experiment.name,
+      experiment.changeableFiles
+    );
+    const dryB = makeDryRunBriefB(
+      iteration,
+      experiment.name,
+      experiment.changeableFiles
+    );
+    const dryC = makeDryRunBriefC(
+      iteration,
+      experiment.name,
+      experiment.changeableFiles
+    );
     writeFileSync(briefAPath, dryA);
     writeFileSync(briefBPath, dryB);
     writeFileSync(briefCPath, dryC);
     console.log(`[phase-1] ✎ Research complete:`);
-    console.log(`[phase-1]   Agent A (methodology): ${extractBriefTitle(dryA)}`);
+    console.log(
+      `[phase-1]   Agent A (methodology): ${extractBriefTitle(dryA)}`
+    );
     console.log(`[phase-1]   Agent B (prompts):     ${extractBriefTitle(dryB)}`);
     console.log(`[phase-1]   Agent C (structure):   ${extractBriefTitle(dryC)}`);
     process.exit(0);
   }
 
-  // Read context for agents
+  // Read journal context
   const journalSummary = readLastJournalEntries(LOOP_DIR, 5);
-  const twBaselinePath = join(
-    REPO_ROOT,
-    "tech-writer-eval",
-    "baselines",
-    "latest",
-    "scores.json"
-  );
-  const srBaselinePath = join(
-    REPO_ROOT,
-    "skill-routing-eval",
-    "results",
-    "latest.json"
-  );
-
-  const twBaseline = readJSON(twBaselinePath);
-  const srBaseline = readJSON(srBaselinePath);
-  const baselineMetrics = formatBaselineMetrics(twBaseline, srBaseline);
-
-  let generatePrompt = "";
-  let judgeTemplate = "";
-  let testCasesJson = "";
-  let srTestCases = "";
-
-  const generatePromptPath = join(
-    REPO_ROOT,
-    "tech-writer-eval",
-    "prompts",
-    "generate-techwriter.md"
-  );
-  const judgeTemplatePath = join(
-    REPO_ROOT,
-    "tech-writer-eval",
-    "prompts",
-    "judge-template-4way.md"
-  );
-  const testCasesPath = join(REPO_ROOT, "tech-writer-eval", "test-cases.json");
-  const srTestCasesPath = join(
-    REPO_ROOT,
-    "skill-routing-eval",
-    "test-cases.yaml"
-  );
-
-  if (existsSync(generatePromptPath)) {
-    generatePrompt = readFileSync(generatePromptPath, "utf-8");
-  }
-  if (existsSync(judgeTemplatePath)) {
-    judgeTemplate = readFileSync(judgeTemplatePath, "utf-8");
-  }
-  if (existsSync(testCasesPath)) {
-    testCasesJson = readFileSync(testCasesPath, "utf-8");
-  }
-  if (existsSync(srTestCasesPath)) {
-    srTestCases = readFileSync(srTestCasesPath, "utf-8");
-  }
-
-  // Read config
-  const configPath = join(LOOP_DIR, "config.json");
-  const config = (readJSON(configPath) ?? {}) as Record<string, unknown>;
-  const researchPriorities = (config.research_priorities as string[] | undefined) ?? [];
-  const prevRejected = readPreviousRejectedCandidates(LOOP_DIR, iteration);
   const fullJournal = readFullJournal(LOOP_DIR);
+  const baselineDisplay = await experiment.formatBaseline();
 
+  // Read config for research priorities
+  let researchPriorities: string[] = [];
+  try {
+    const cfg = JSON.parse(
+      readFileSync(join(LOOP_DIR, "config.json"), "utf-8")
+    ) as Record<string, unknown>;
+    researchPriorities =
+      (cfg.research_priorities as string[] | undefined) ?? [];
+  } catch {
+    // ignore
+  }
+
+  const prevRejected = readPreviousRejectedCandidates(LOOP_DIR, iteration);
+
+  // Load context files for agent B (content inspection)
+  const contextFileContents = loadContextFiles(
+    experiment.contextFiles,
+    REPO_ROOT
+  );
+
+  // Build shared variables
   const sharedVars: Record<string, string> = {
     ITERATION: String(iteration),
-    BASELINE_METRICS: baselineMetrics,
+    EXPERIMENT_NAME: experiment.name,
+    EXPERIMENT_DESCRIPTION: experiment.description,
+    BASELINE_METRICS: baselineDisplay,
     JOURNAL_SUMMARY: journalSummary,
-    RESEARCH_PRIORITIES: researchPriorities.join("\n") || "(no specific priorities set)",
+    RESEARCH_PRIORITIES:
+      researchPriorities.join("\n") || "(no specific priorities set)",
     PREV_REJECTED: prevRejected,
+    CHANGEABLE_FILES: experiment.changeableFiles.join("\n"),
+    CONTEXT_FILES: experiment.contextFiles.join("\n"),
+    RESEARCH_HINTS: experiment.researchHints.join("\n"),
+    DEPENDENT_VARIABLES: experiment.dependentVariables.join(", "),
+    HYPOTHESIS_KNOWLEDGE: hypothesisKnowledge,
   };
+
+  // Build context file content vars (keyed by path for template injection)
+  const contextVars: Record<string, string> = {};
+  for (const [relPath, content] of Object.entries(contextFileContents)) {
+    // Create a sanitized key: replace path separators and dots with underscores, uppercase
+    const key = relPath
+      .replace(/[/\\.-]/g, "_")
+      .toUpperCase()
+      .replace(/__+/g, "_");
+    contextVars[`CTX_${key}`] = content;
+  }
 
   // Template paths
   const templateA = join(LOOP_DIR, "templates", "research-methodology.md");
@@ -354,10 +362,7 @@ async function main(): Promise<void> {
     spawnAgent(templateA, { ...sharedVars }),
     spawnAgent(templateB, {
       ...sharedVars,
-      GENERATE_PROMPT: generatePrompt,
-      JUDGE_TEMPLATE: judgeTemplate,
-      TEST_CASES_JSON: testCasesJson,
-      SR_TEST_CASES: srTestCases,
+      ...contextVars,
     }),
     spawnAgent(templateC, {
       ...sharedVars,
@@ -371,7 +376,9 @@ async function main(): Promise<void> {
   writeFileSync(briefCPath, briefC);
 
   console.log(`[phase-1] ✎ Research complete:`);
-  console.log(`[phase-1]   Agent A (methodology): ${extractBriefTitle(briefA)}`);
+  console.log(
+    `[phase-1]   Agent A (methodology): ${extractBriefTitle(briefA)}`
+  );
   console.log(`[phase-1]   Agent B (prompts):     ${extractBriefTitle(briefB)}`);
   console.log(`[phase-1]   Agent C (structure):   ${extractBriefTitle(briefC)}`);
   console.log(`[phase-1]   Agent A brief: ${briefAPath}`);

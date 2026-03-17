@@ -3,11 +3,17 @@
  * Phase 2: Plan
  * Combines 3 research briefs via a single planner agent into 3 non-overlapping
  * implementation approaches. Writes to loop/iteration-N/plan/
+ *
+ * Now experiment-agnostic: uses experiment.changeableFiles to validate
+ * that approaches only propose changes to authorized files.
+ * Injects hypothesis knowledge into planner context.
  */
 
 import { join } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnAgent } from "../lib/agent.ts";
+import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
+import { HypothesisRegistry } from "../engine/hypothesis.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -16,18 +22,26 @@ const LOOP_DIR = join(REPO_ROOT, "loop");
 // CLI arg parsing
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv: string[]): { iteration: number; dryRun: boolean } {
+function parseArgs(argv: string[]): {
+  iteration: number;
+  dryRun: boolean;
+  experiment: string | null;
+} {
   let iteration = 1;
   let dryRun = false;
+  let experiment: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--iteration" && argv[i + 1]) {
       iteration = parseInt(argv[i + 1], 10);
       i++;
     } else if (argv[i] === "--dry-run") {
       dryRun = true;
+    } else if (argv[i] === "--experiment" && argv[i + 1]) {
+      experiment = argv[i + 1];
+      i++;
     }
   }
-  return { iteration, dryRun };
+  return { iteration, dryRun, experiment };
 }
 
 // ---------------------------------------------------------------------------
@@ -40,35 +54,6 @@ function readJSON(filePath: string): unknown {
   } catch {
     return null;
   }
-}
-
-function formatBaselineMetrics(
-  twBaseline: unknown,
-  srBaseline: unknown
-): string {
-  const lines: string[] = [];
-  if (twBaseline && typeof twBaseline === "object") {
-    const tw = twBaseline as Record<string, unknown>;
-    const weighted = tw.weighted_scores as Record<string, number> | undefined;
-    const borda = tw.borda_counts as Record<string, number> | undefined;
-    const stats = tw.statistical_tests as Record<string, unknown> | undefined;
-    lines.push("tech-writer-eval:");
-    if (weighted) lines.push(`  weighted_scores: ${JSON.stringify(weighted)}`);
-    if (borda) lines.push(`  borda_counts: ${JSON.stringify(borda)}`);
-    if (stats && "friedman_p" in stats) lines.push(`  friedman_p: ${stats.friedman_p}`);
-  }
-  if (srBaseline && typeof srBaseline === "object") {
-    const sr = srBaseline as Record<string, unknown>;
-    const results = (sr.results as Record<string, unknown>) ?? sr;
-    const stats = results.stats as Record<string, unknown> | undefined;
-    if (stats) {
-      const s = (stats.successes as number) ?? 0;
-      const f = (stats.failures as number) ?? 0;
-      const t = s + f;
-      lines.push(`skill-routing-eval: pass_rate=${t > 0 ? (s / t).toFixed(3) : "unknown"} (${s}/${t})`);
-    }
-  }
-  return lines.join("\n") || "No baseline data available";
 }
 
 /**
@@ -86,7 +71,9 @@ function readCarryoverCandidates(loopDir: string, iteration: number): string {
   if (!existsSync(prevSummaryPath)) return "(no prior plan summary found)";
   const content = readFileSync(prevSummaryPath, "utf-8");
   // Extract "Rejected" section if present
-  const rejectedMatch = content.match(/## Rejected[^\n]*\n([\s\S]*?)(?=\n##|$)/i);
+  const rejectedMatch = content.match(
+    /## Rejected[^\n]*\n([\s\S]*?)(?=\n##|$)/i
+  );
   if (rejectedMatch) {
     return `From iteration ${iteration - 1} plan summary:\n${rejectedMatch[1].trim()}`;
   }
@@ -139,7 +126,8 @@ function parsePlannerOutput(output: string): {
     );
     if (idx === -1) return fallbackContent;
     const start = matches[idx].index;
-    const end = idx + 1 < matches.length ? matches[idx + 1].index : output.length;
+    const end =
+      idx + 1 < matches.length ? matches[idx + 1].index : output.length;
     return output.slice(start, end).trim();
   }
 
@@ -164,34 +152,65 @@ function extractApproachTitle(doc: string): string {
 }
 
 /**
- * Extract the target eval from an approach document.
- * Looks for "**Target eval**:" or "Target eval:".
+ * Extract the files to change from an approach document.
  */
-function extractTargetEval(doc: string): string {
-  const match =
-    doc.match(/^\*\*Target[_\s]eval\*\*:\s*(.+)/im) ??
-    doc.match(/^Target[_\s]eval:\s*(.+)/im);
-  return match?.[1]?.trim().slice(0, 40) ?? "unknown";
+function extractFilesToChange(doc: string): string[] {
+  const files: string[] = [];
+  // Match lines like "- `path/to/file.ext`" or "- path/to/file.ext"
+  const fileMatches = doc.matchAll(/^[-*]\s+`?([^\s`]+\.[a-z]+[^`\s]*)`?/gim);
+  for (const m of fileMatches) {
+    if (m[1] && !m[1].startsWith("#")) {
+      files.push(m[1].trim());
+    }
+  }
+  return files;
 }
 
 /**
  * Validate that an approach document contains the required fields.
- * Logs a warning but does not throw — a partial doc is better than aborting.
+ * Now also checks that filesToChange are within experiment.changeableFiles.
+ * Logs warnings but does not throw.
  */
-function validateApproachDoc(label: string, doc: string): void {
+function validateApproachDoc(
+  label: string,
+  doc: string,
+  changeableFiles: string[]
+): void {
   const requiredPatterns = [
     { name: "title", pattern: /title/i },
-    { name: "target_eval", pattern: /target[_\s]eval|tech-writer-eval|skill-routing-eval/i },
-    { name: "files", pattern: /file[s]?\s*to\s*change|file[s]?:/i },
-    { name: "expected_delta", pattern: /expected[_\s](metric[_\s])?delta|expected[_\s]effect/i },
+    { name: "files_to_change", pattern: /file[s]?\s*to\s*change|file[s]?:/i },
+    {
+      name: "expected_delta",
+      pattern: /expected[_\s](metric[_\s])?delta|expected[_\s]effect/i,
+    },
     { name: "risk", pattern: /risk\s*(level)?:/i },
   ];
 
   const missing = requiredPatterns.filter((p) => !p.pattern.test(doc));
   if (missing.length > 0) {
     console.warn(
-      `[phase-2] Warning: approach-${label}.md missing fields: ${missing.map((m) => m.name).join(", ")}`
+      `[phase-2] Warning: approach-${label}.md missing fields: ${missing
+        .map((m) => m.name)
+        .join(", ")}`
     );
+  }
+
+  // Warn if any proposed file is outside changeableFiles
+  const proposedFiles = extractFilesToChange(doc);
+  if (proposedFiles.length > 0 && changeableFiles.length > 0) {
+    for (const f of proposedFiles) {
+      const isAllowed = changeableFiles.some(
+        (pattern) =>
+          f === pattern ||
+          f.startsWith(pattern.replace(/\*.*$/, "")) ||
+          pattern.includes("*")
+      );
+      if (!isAllowed) {
+        console.warn(
+          `[phase-2] Warning: approach-${label} proposes changes to "${f}" which may be outside experiment.changeableFiles`
+        );
+      }
+    }
   }
 }
 
@@ -199,20 +218,24 @@ function validateApproachDoc(label: string, doc: string): void {
 // Dry-run stubs
 // ---------------------------------------------------------------------------
 
-function makeDryRunApproachA(iteration: number): string {
-  return `## Approach A — Add second evaluation topic for statistical power
+function makeDryRunApproachA(
+  iteration: number,
+  changeableFiles: string[]
+): string {
+  const primaryFile = changeableFiles[0] ?? "experiment/test-cases.json";
+  return `## Approach A — Increase sample size for statistical power
 
-**Title**: Add second evaluation topic for Friedman significance
+**Title**: Add additional evaluation samples for statistical significance
 
-**Target eval**: tech-writer-eval
+**Hypothesis ID**: h-0001
 
 **Files to change**:
-- tech-writer-eval/test-cases.json
+- ${primaryFile}
 
 **Change description**:
-Add a second topic (e.g., "Git branching strategies") to test-cases.json with a corresponding reference document. This doubles the number of judge data points from 7 to 14, dramatically improving Friedman test power.
+Add additional data points to increase statistical test power. This directly addresses the primary weakness in the current evaluation.
 
-**Expected metric delta**: Friedman p expected to decrease from 0.66 to ~0.30
+**Expected metric delta**: Primary metric expected to improve by 10-15%
 
 **Risk level**: medium
 
@@ -222,21 +245,24 @@ Add a second topic (e.g., "Git branching strategies") to test-cases.json with a 
 `;
 }
 
-function makeDryRunApproachB(iteration: number): string {
-  return `## Approach B — Improve skill-routing test coverage for underrepresented categories
+function makeDryRunApproachB(
+  iteration: number,
+  changeableFiles: string[]
+): string {
+  const primaryFile = changeableFiles[1] ?? changeableFiles[0] ?? "experiment/config.yaml";
+  return `## Approach B — Improve evaluation coverage for edge cases
 
-**Title**: Add test cases for agent-vs-skill and ambient categories
+**Title**: Add test cases for underrepresented scenarios
 
-**Target eval**: skill-routing-eval
+**Hypothesis ID**: h-0002
 
 **Files to change**:
-- skill-routing-eval/test-cases.yaml
-- skill-routing-eval/promptfooconfig.yaml
+- ${primaryFile}
 
 **Change description**:
-Add 4 new test cases (2 per category) for categories currently at 0% pass rate. Update promptfooconfig.yaml to reference the new test cases.
+Add new test cases targeting categories with low pass rates. Update configuration to reference the new test cases.
 
-**Expected metric delta**: Pass rate delta +0.09 (2 additional passes out of 22+4=26 total)
+**Expected metric delta**: Metric delta +5-10 percentage points
 
 **Risk level**: low
 
@@ -246,20 +272,24 @@ Add 4 new test cases (2 per category) for categories currently at 0% pass rate. 
 `;
 }
 
-function makeDryRunApproachC(iteration: number): string {
-  return `## Approach C — Strengthen judge rubric anchor descriptions
+function makeDryRunApproachC(
+  iteration: number,
+  changeableFiles: string[]
+): string {
+  const primaryFile = changeableFiles[0] ?? "experiment/prompts/template.md";
+  return `## Approach C — Strengthen evaluation criteria specificity
 
-**Title**: Add explicit scoring anchors to judge template criteria
+**Title**: Add explicit scoring anchors to evaluation criteria
 
-**Target eval**: tech-writer-eval
+**Hypothesis ID**: h-0003
 
 **Files to change**:
-- tech-writer-eval/prompts/judge-template-4way.md
+- ${primaryFile}
 
 **Change description**:
-For each of the 9 evaluation criteria, add 1-2 sentence examples of what a "1", "5", and "10" score looks like. This reduces inter-judge variance by providing concrete reference points.
+For each evaluation criterion, add concrete examples of what each score level looks like. This reduces inter-evaluator variance by providing reference points.
 
-**Expected metric delta**: Weighted score delta +0.15, Bootstrap CI narrows by ~0.10
+**Expected metric delta**: Primary metric delta +0.1-0.2, variance reduction ~10%
 
 **Risk level**: low
 
@@ -275,13 +305,13 @@ function makeDryRunPlanSummary(iteration: number): string {
 **Iteration**: ${iteration}
 
 **Selection rationale**:
-- Approach A targets the highest-priority weakness: Friedman p=0.66 indicates weak statistical power. Adding a topic is the most direct fix.
-- Approach B covers skill-routing-eval (required per loop rules to advance both evals each iteration).
-- Approach C is an incremental rubric improvement with low risk as a hedge.
+- Approach A targets the highest-priority weakness: statistical power. Adding samples is the most direct fix.
+- Approach B covers edge case coverage (required to advance the experiment each iteration).
+- Approach C is an incremental criteria improvement with low risk as a hedge.
 
 **Rejected suggestions**:
-- Temperature variation for judges (Agent A): deferred — adding a topic is higher priority.
-- CoT instructions for generation (Agent B): deferred — rubric improvements first.
+- Alternative methodology (Agent A): deferred — adding samples is higher priority.
+- CoT instructions (Agent B): deferred — criteria improvements first.
 
 (dry-run plan summary for iteration ${iteration})
 `;
@@ -292,8 +322,12 @@ function makeDryRunPlanSummary(iteration: number): string {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { iteration, dryRun } = parseArgs(process.argv.slice(2));
-  console.log(`[phase-2] Starting plan phase for iteration ${iteration}${dryRun ? " (dry-run)" : ""}`);
+  const { iteration, dryRun, experiment: experimentArg } = parseArgs(
+    process.argv.slice(2)
+  );
+  console.log(
+    `[phase-2] Starting plan phase for iteration ${iteration}${dryRun ? " (dry-run)" : ""}`
+  );
 
   const researchDir = join(LOOP_DIR, `iteration-${iteration}`, "research");
   const outDir = join(LOOP_DIR, `iteration-${iteration}`, "plan");
@@ -306,19 +340,31 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // Load experiment plugin
+  const experiment = experimentArg
+    ? await loadExperiment(experimentArg)
+    : await getActiveExperiment(LOOP_DIR);
+  console.log(`[phase-2] Experiment: ${experiment.name}`);
+
   if (dryRun) {
     console.log("[phase-2] Dry-run: writing stub plan documents");
-    const dryA = makeDryRunApproachA(iteration);
-    const dryB = makeDryRunApproachB(iteration);
-    const dryC = makeDryRunApproachC(iteration);
+    const dryA = makeDryRunApproachA(iteration, experiment.changeableFiles);
+    const dryB = makeDryRunApproachB(iteration, experiment.changeableFiles);
+    const dryC = makeDryRunApproachC(iteration, experiment.changeableFiles);
     writeFileSync(join(outDir, "approach-a.md"), dryA);
     writeFileSync(join(outDir, "approach-b.md"), dryB);
     writeFileSync(join(outDir, "approach-c.md"), dryC);
     writeFileSync(summaryPath, makeDryRunPlanSummary(iteration));
     console.log(`[phase-2] ✎ Plan — 3 approaches selected:`);
-    console.log(`[phase-2]   A: ${extractApproachTitle(dryA).padEnd(50)}  → target: ${extractTargetEval(dryA)}`);
-    console.log(`[phase-2]   B: ${extractApproachTitle(dryB).padEnd(50)}  → target: ${extractTargetEval(dryB)}`);
-    console.log(`[phase-2]   C: ${extractApproachTitle(dryC).padEnd(50)}  → target: ${extractTargetEval(dryC)}`);
+    console.log(
+      `[phase-2]   A: ${extractApproachTitle(dryA).padEnd(50)}  → target: ${experiment.name}`
+    );
+    console.log(
+      `[phase-2]   B: ${extractApproachTitle(dryB).padEnd(50)}  → target: ${experiment.name}`
+    );
+    console.log(
+      `[phase-2]   C: ${extractApproachTitle(dryC).padEnd(50)}  → target: ${experiment.name}`
+    );
     process.exit(0);
   }
 
@@ -327,7 +373,11 @@ async function main(): Promise<void> {
   const briefBPath = join(researchDir, "agent-b-brief.md");
   const briefCPath = join(researchDir, "agent-c-brief.md");
 
-  for (const [label, p] of [["A", briefAPath], ["B", briefBPath], ["C", briefCPath]]) {
+  for (const [label, p] of [
+    ["A", briefAPath],
+    ["B", briefBPath],
+    ["C", briefCPath],
+  ]) {
     if (!existsSync(p)) {
       console.error(`[phase-2] Missing research brief ${label} at ${p}`);
       process.exit(1);
@@ -341,22 +391,18 @@ async function main(): Promise<void> {
   // Carry-over from previous iteration
   const carryoverCandidates = readCarryoverCandidates(LOOP_DIR, iteration);
 
-  // Config context
-  const configPath = join(LOOP_DIR, "config.json");
-  const config = (readJSON(configPath) ?? {}) as Record<string, unknown>;
-  const evalsEnabled = (config.evals_enabled as string[] | undefined) ?? [
-    "tech-writer-eval",
-    "skill-routing-eval",
-  ];
+  // Hypothesis knowledge
+  const registry = new HypothesisRegistry(LOOP_DIR);
+  const hypothesisKnowledge = registry.getKnowledgeSummary(10);
 
-  // Baseline metrics for context
-  const twBaseline = readJSON(
-    join(REPO_ROOT, "tech-writer-eval", "baselines", "latest", "scores.json")
-  );
-  const srBaseline = readJSON(
-    join(REPO_ROOT, "skill-routing-eval", "results", "latest.json")
-  );
-  const baselineMetrics = formatBaselineMetrics(twBaseline, srBaseline);
+  // Baseline display
+  const baselineDisplay = await experiment.formatBaseline();
+
+  // Read config for extra context
+  const config = (readJSON(join(LOOP_DIR, "config.json")) ?? {}) as Record<
+    string,
+    unknown
+  >;
 
   // Invoke planner agent
   console.log("[phase-2] Invoking planner agent...");
@@ -364,22 +410,31 @@ async function main(): Promise<void> {
 
   const planOutput = await spawnAgent(templatePath, {
     ITERATION: String(iteration),
+    EXPERIMENT_NAME: experiment.name,
+    EXPERIMENT_DESCRIPTION: experiment.description,
     BRIEF_A: briefA,
     BRIEF_B: briefB,
     BRIEF_C: briefC,
     CARRYOVER_CANDIDATES: carryoverCandidates,
-    EVALS_ENABLED: evalsEnabled.join(", "),
-    BASELINE_METRICS: baselineMetrics,
+    CHANGEABLE_FILES: experiment.changeableFiles.join("\n"),
+    CONTEXT_FILES: experiment.contextFiles.join("\n"),
+    RESEARCH_HINTS: experiment.researchHints.join("\n"),
+    DEPENDENT_VARIABLES: experiment.dependentVariables.join(", "),
+    HYPOTHESIS_KNOWLEDGE: hypothesisKnowledge,
+    BASELINE_METRICS: baselineDisplay,
+    RESEARCH_PRIORITIES:
+      (config.research_priorities as string[] | undefined)?.join("\n") ??
+      "(see experiment research hints)",
   });
 
   // Parse planner output into sections
   const { approachA, approachB, approachC, planSummary } =
     parsePlannerOutput(planOutput);
 
-  // Validate each approach doc
-  validateApproachDoc("a", approachA);
-  validateApproachDoc("b", approachB);
-  validateApproachDoc("c", approachC);
+  // Validate each approach doc against experiment.changeableFiles
+  validateApproachDoc("a", approachA, experiment.changeableFiles);
+  validateApproachDoc("b", approachB, experiment.changeableFiles);
+  validateApproachDoc("c", approachC, experiment.changeableFiles);
 
   // Write outputs
   const docA = approachA || planOutput;
@@ -391,9 +446,15 @@ async function main(): Promise<void> {
   writeFileSync(summaryPath, planSummary || planOutput);
 
   console.log(`[phase-2] ✎ Plan — 3 approaches selected:`);
-  console.log(`[phase-2]   A: ${extractApproachTitle(docA).padEnd(50)}  → target: ${extractTargetEval(docA)}`);
-  console.log(`[phase-2]   B: ${extractApproachTitle(docB).padEnd(50)}  → target: ${extractTargetEval(docB)}`);
-  console.log(`[phase-2]   C: ${extractApproachTitle(docC).padEnd(50)}  → target: ${extractTargetEval(docC)}`);
+  console.log(
+    `[phase-2]   A: ${extractApproachTitle(docA).padEnd(50)}  → ${experiment.name}`
+  );
+  console.log(
+    `[phase-2]   B: ${extractApproachTitle(docB).padEnd(50)}  → ${experiment.name}`
+  );
+  console.log(
+    `[phase-2]   C: ${extractApproachTitle(docC).padEnd(50)}  → ${experiment.name}`
+  );
   console.log(`[phase-2]   approach-a.md: ${join(outDir, "approach-a.md")}`);
   console.log(`[phase-2]   approach-b.md: ${join(outDir, "approach-b.md")}`);
   console.log(`[phase-2]   approach-c.md: ${join(outDir, "approach-c.md")}`);

@@ -2,14 +2,20 @@
 /**
  * Phase 4: Analyze
  * For each approach, spawn one reviewer agent that votes keep/drop/conditional.
- * Auto-drops approaches with status "error", "degraded", or regression_detected.
+ * Auto-drops approaches with status "error", "isolation_failed", or regressionDetected.
  * Runs 3 agents in parallel.
  * Writes vote JSONs to loop/iteration-N/analyze/
+ *
+ * Now experiment-agnostic: uses experiment plugin for metric formatting
+ * and decision criteria text in reviewer prompts.
  */
 
 import { join } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnAgent } from "../lib/agent.ts";
+import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
+import { DECISION_PROTOCOL_TEXT } from "../engine/decision.ts";
+import type { ExperimentResult, ReviewerVote } from "../engine/types.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -18,49 +24,26 @@ const LOOP_DIR = join(REPO_ROOT, "loop");
 // CLI arg parsing
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv: string[]): { iteration: number; dryRun: boolean } {
+function parseArgs(argv: string[]): {
+  iteration: number;
+  dryRun: boolean;
+  experiment: string | null;
+} {
   let iteration = 1;
   let dryRun = false;
+  let experiment: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--iteration" && argv[i + 1]) {
       iteration = parseInt(argv[i + 1], 10);
       i++;
     } else if (argv[i] === "--dry-run") {
       dryRun = true;
+    } else if (argv[i] === "--experiment" && argv[i + 1]) {
+      experiment = argv[i + 1];
+      i++;
     }
   }
-  return { iteration, dryRun };
-}
-
-// ---------------------------------------------------------------------------
-// Types (inline mirrors of lib/types.ts to avoid circular imports)
-// ---------------------------------------------------------------------------
-
-type ApproachLabel = "a" | "b" | "c";
-type VoteValue = "keep" | "drop" | "conditional";
-type Confidence = "high" | "medium" | "low";
-
-interface ReviewerVote {
-  approach: ApproachLabel;
-  reviewer_agent: number;
-  vote: VoteValue;
-  confidence: Confidence;
-  primary_metric_delta: string;
-  secondary_signals: string[];
-  concerns: string[];
-  rationale: string;
-  auto_dropped: boolean;
-}
-
-interface ApproachResult {
-  approach: ApproachLabel;
-  iteration: number;
-  target_eval: string;
-  status: "success" | "error" | "degraded";
-  error: string | null;
-  metrics: Record<string, unknown> | null;
-  baseline_deltas: Record<string, number> | null;
-  regression_detected: boolean;
+  return { iteration, dryRun, experiment };
 }
 
 // ---------------------------------------------------------------------------
@@ -83,7 +66,10 @@ function readJSONOrNull(filePath: string): unknown {
  * Parse the reviewer agent output as JSON.
  * The agent is asked to output a JSON block; extract it from markdown if needed.
  */
-function parseReviewerOutput(output: string, label: ApproachLabel): ReviewerVote {
+function parseReviewerOutput(
+  output: string,
+  label: "a" | "b" | "c"
+): ReviewerVote {
   // Try to extract JSON from a fenced code block first
   const fenceMatch = output.match(/```(?:json)?\s*\n([\s\S]*?)```/);
   const jsonStr = fenceMatch ? fenceMatch[1].trim() : output.trim();
@@ -91,10 +77,10 @@ function parseReviewerOutput(output: string, label: ApproachLabel): ReviewerVote
   try {
     const parsed = JSON.parse(jsonStr) as Partial<ReviewerVote>;
     return {
-      approach: label,
+      label,
       reviewer_agent: 1,
-      vote: (parsed.vote as VoteValue) ?? "drop",
-      confidence: (parsed.confidence as Confidence) ?? "low",
+      vote: (parsed.vote as ReviewerVote["vote"]) ?? "drop",
+      confidence: (parsed.confidence as ReviewerVote["confidence"]) ?? "low",
       primary_metric_delta: parsed.primary_metric_delta ?? "unknown",
       secondary_signals: parsed.secondary_signals ?? [],
       concerns: parsed.concerns ?? [],
@@ -103,9 +89,11 @@ function parseReviewerOutput(output: string, label: ApproachLabel): ReviewerVote
     };
   } catch {
     // Could not parse JSON — treat as drop with explanation
-    console.warn(`[phase-4] Could not parse reviewer JSON for approach ${label}, defaulting to drop`);
+    console.warn(
+      `[phase-4] Could not parse reviewer JSON for approach ${label}, defaulting to drop`
+    );
     return {
-      approach: label,
+      label,
       reviewer_agent: 1,
       vote: "drop",
       confidence: "low",
@@ -119,63 +107,33 @@ function parseReviewerOutput(output: string, label: ApproachLabel): ReviewerVote
 }
 
 // ---------------------------------------------------------------------------
-// Decision protocol text (inlined from requirements section 6)
-// ---------------------------------------------------------------------------
-
-const DECISION_PROTOCOL_TEXT = `
-## Decision Protocol
-
-### tech-writer-eval
-Keep vote criteria (at least one required):
-- Borda delta (techwriter) >= +1
-- Weighted score delta >= +0.1
-- Friedman p decreases by >= 0.05
-- Bootstrap CI narrows by >= 0.1
-
-Veto criteria (any triggers mandatory drop):
-- regression_detected: true
-- Friedman p increases by > 0.10
-- Any criterion mean drops below baseline - 0.8
-- Successful judge count drops below 4
-
-### skill-routing-eval
-Keep vote criteria (at least one required):
-- Pass rate delta >= +0.05 (5 percentage points)
-- Category pass rate >= +0.10 on a previously failing category
-
-Veto criteria (any triggers mandatory drop):
-- Any previously passing test now fails
-- Pass rate drops
-
-Vote values: "keep", "drop", "conditional"
-Output must be a JSON object with fields:
-  vote, confidence, primary_metric_delta, secondary_signals, concerns, rationale
-`;
-
-// ---------------------------------------------------------------------------
 // Dry-run stub
 // ---------------------------------------------------------------------------
 
 function makeDryRunVote(
-  label: ApproachLabel,
-  result: ApproachResult
+  label: "a" | "b" | "c",
+  result: ExperimentResult
 ): ReviewerVote {
-  if (result.status !== "success" || result.regression_detected) {
+  if (
+    result.status !== "success" ||
+    result.regressionDetected ||
+    result.status === "isolation_failed"
+  ) {
     return {
-      approach: label,
+      label,
       reviewer_agent: 1,
       vote: "drop",
       confidence: "high",
       primary_metric_delta: "N/A",
       secondary_signals: [],
       concerns: [`status=${result.status}`],
-      rationale: `Auto-drop: status=${result.status}, regression=${result.regression_detected}`,
+      rationale: `Auto-drop: status=${result.status}, regression=${result.regressionDetected}`,
       auto_dropped: true,
     };
   }
   // Fake a "keep" for dry-run
   return {
-    approach: label,
+    label,
     reviewer_agent: 1,
     vote: "keep",
     confidence: "medium",
@@ -192,13 +150,16 @@ function makeDryRunVote(
 // ---------------------------------------------------------------------------
 
 async function analyzeApproach(
-  label: ApproachLabel,
+  label: "a" | "b" | "c",
   executeDir: string,
   planDir: string,
   outDir: string,
-  twBaseline: unknown,
-  srBaseline: unknown,
-  dryRun: boolean
+  baselineMetricsStr: string,
+  experimentDescription: string,
+  decisionCriteriaText: string,
+  dryRun: boolean,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  experiment: { formatMetrics: (m: Record<string, any>) => string; formatDelta: (c: Record<string, any>, b: Record<string, any>) => string; readBaseline: () => Promise<Record<string, any> | null> }
 ): Promise<ReviewerVote> {
   const votePath = join(outDir, `approach-${label}-vote.json`);
 
@@ -210,9 +171,11 @@ async function analyzeApproach(
 
   const resultPath = join(executeDir, `approach-${label}-result.json`);
   if (!existsSync(resultPath)) {
-    console.error(`[phase-4] Result not found for approach ${label}: ${resultPath}`);
+    console.error(
+      `[phase-4] Result not found for approach ${label}: ${resultPath}`
+    );
     const fallbackVote: ReviewerVote = {
-      approach: label,
+      label,
       reviewer_agent: 1,
       vote: "drop",
       confidence: "high",
@@ -226,34 +189,38 @@ async function analyzeApproach(
     return fallbackVote;
   }
 
-  const result = readJSON(resultPath) as ApproachResult;
+  const result = readJSON(resultPath) as ExperimentResult;
   const approachDocPath = join(planDir, `approach-${label}.md`);
   const approachDoc = existsSync(approachDocPath)
     ? readFileSync(approachDocPath, "utf-8")
     : "(approach document not found)";
 
-  // Auto-drop cases: error, degraded, or regression detected
+  // Auto-drop conditions: error, isolation_failed, or regression detected
   if (
     result.status === "error" ||
-    result.status === "degraded" ||
-    result.regression_detected
+    result.status === "isolation_failed" ||
+    result.regressionDetected
   ) {
-    const reason =
-      result.status === "error"
-        ? `Implementation failed: ${result.error ?? "unknown error"}`
-        : result.status === "degraded"
-        ? `Degraded: ${result.error ?? "insufficient judge responses"}`
-        : "Regression detected";
+    let reason: string;
+    if (result.status === "error") {
+      reason = `Implementation failed: ${result.error ?? "unknown error"}`;
+    } else if (result.status === "isolation_failed") {
+      const files =
+        result.isolationViolation?.unexpectedFiles.join(", ") ?? "unknown";
+      reason = `Isolation violation: unexpected files changed: ${files}`;
+    } else {
+      reason = "Regression detected";
+    }
 
     const vote: ReviewerVote = {
-      approach: label,
+      label,
       reviewer_agent: 1,
       vote: "drop",
       confidence: "high",
       primary_metric_delta: "N/A",
       secondary_signals: [],
       concerns: [reason],
-      rationale: `Auto-drop: status=${result.status}, regression=${result.regression_detected}`,
+      rationale: `Auto-drop: status=${result.status}, regression=${result.regressionDetected}`,
       auto_dropped: true,
     };
     console.log(`[phase-4] Approach ${label}: auto-drop (${reason})`);
@@ -267,6 +234,19 @@ async function analyzeApproach(
     return vote;
   }
 
+  // Format current metrics and delta for reviewer context
+  const metricsStr = result.metrics
+    ? experiment.formatMetrics(result.metrics as Record<string, number | string | boolean | null>)
+    : "(no metrics)";
+
+  const baseline = await experiment.readBaseline();
+  const deltaStr = result.metrics && baseline
+    ? experiment.formatDelta(
+        result.metrics as Record<string, number | string | boolean | null>,
+        baseline as Record<string, number | string | boolean | null>
+      )
+    : "(no baseline)";
+
   // Invoke reviewer agent
   console.log(`[phase-4] Invoking reviewer agent for approach ${label}...`);
   const templatePath = join(LOOP_DIR, "templates", "reviewer.md");
@@ -275,14 +255,18 @@ async function analyzeApproach(
     APPROACH_LABEL: label.toUpperCase(),
     APPROACH_DOC: approachDoc,
     RESULT_JSON: JSON.stringify(result, null, 2),
-    TW_BASELINE: JSON.stringify(twBaseline ?? {}, null, 2),
-    SR_BASELINE: JSON.stringify(srBaseline ?? {}, null, 2),
-    DECISION_PROTOCOL: DECISION_PROTOCOL_TEXT,
+    BASELINE_METRICS: baselineMetricsStr,
+    EXPERIMENT_DESCRIPTION: experimentDescription,
+    METRICS_SUMMARY: metricsStr,
+    DELTA_SUMMARY: deltaStr,
+    DECISION_PROTOCOL: decisionCriteriaText,
   });
 
   const vote = parseReviewerOutput(reviewOutput, label);
   writeFileSync(votePath, JSON.stringify(vote, null, 2));
-  console.log(`[phase-4] Approach ${label}: vote=${vote.vote} confidence=${vote.confidence}`);
+  console.log(
+    `[phase-4] Approach ${label}: vote=${vote.vote} confidence=${vote.confidence}`
+  );
   return vote;
 }
 
@@ -291,7 +275,9 @@ async function analyzeApproach(
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { iteration, dryRun } = parseArgs(process.argv.slice(2));
+  const { iteration, dryRun, experiment: experimentArg } = parseArgs(
+    process.argv.slice(2)
+  );
   console.log(
     `[phase-4] Starting analyze phase for iteration ${iteration}${dryRun ? " (dry-run)" : ""}`
   );
@@ -301,22 +287,18 @@ async function main(): Promise<void> {
   const outDir = join(LOOP_DIR, `iteration-${iteration}`, "analyze");
   mkdirSync(outDir, { recursive: true });
 
-  // Read baselines
-  const twBaselinePath = join(
-    REPO_ROOT,
-    "tech-writer-eval",
-    "baselines",
-    "latest",
-    "scores.json"
-  );
-  const srBaselinePath = join(
-    REPO_ROOT,
-    "skill-routing-eval",
-    "results",
-    "latest.json"
-  );
-  const twBaseline = readJSONOrNull(twBaselinePath);
-  const srBaseline = readJSONOrNull(srBaselinePath);
+  // Load experiment plugin
+  const experiment = experimentArg
+    ? await loadExperiment(experimentArg)
+    : await getActiveExperiment(LOOP_DIR);
+  console.log(`[phase-4] Experiment: ${experiment.name}`);
+
+  // Format baseline for reviewer context
+  const baselineDisplay = await experiment.formatBaseline();
+
+  // Decision criteria text — use plugin-specific if available, else generic
+  const decisionCriteriaText =
+    experiment.decisionCriteriaText ?? DECISION_PROTOCOL_TEXT;
 
   // Run 3 reviewer agents in parallel (each independent, no collusion)
   const votes = await Promise.all(
@@ -326,23 +308,28 @@ async function main(): Promise<void> {
         executeDir,
         planDir,
         outDir,
-        twBaseline,
-        srBaseline,
-        dryRun
+        baselineDisplay,
+        experiment.description,
+        decisionCriteriaText,
+        dryRun,
+        experiment
       )
     )
   );
 
   console.log(
-    `[phase-4] Analysis complete: ${votes.map((v) => `${v.approach}=${v.vote}`).join(", ")}`
+    `[phase-4] Analysis complete: ${votes.map((v) => `${v.label}=${v.vote}`).join(", ")}`
   );
 
   // Human-readable votes summary
-  console.log(`[phase-4] ── Review Votes ─────────────────────────────────`);
+  console.log(
+    `[phase-4] ── Review Votes ─────────────────────────────────`
+  );
   for (const vote of votes) {
-    const label = vote.approach.toUpperCase();
+    const label = vote.label.toUpperCase();
     if (vote.auto_dropped) {
-      const reason = vote.concerns?.[0] ?? vote.rationale?.slice(0, 60) ?? "auto-dropped";
+      const reason =
+        vote.concerns?.[0] ?? vote.rationale?.slice(0, 60) ?? "auto-dropped";
       console.log(`[phase-4]   ${label}: DROP (auto) — "${reason}"`);
     } else {
       const decisionStr =
@@ -351,20 +338,13 @@ async function main(): Promise<void> {
           : vote.vote === "conditional"
           ? `KEEP conditional (${vote.confidence} confidence)`
           : `DROP (${vote.confidence} confidence)`;
-      // Use primary_metric_delta as the first part of the rationale snippet
-      const detail = vote.primary_metric_delta && vote.primary_metric_delta !== "unknown"
-        ? vote.primary_metric_delta.slice(0, 60)
-        : vote.rationale?.slice(0, 60) ?? "";
+      const detail =
+        vote.primary_metric_delta &&
+        vote.primary_metric_delta !== "unknown"
+          ? vote.primary_metric_delta.slice(0, 60)
+          : vote.rationale?.slice(0, 60) ?? "";
       console.log(`[phase-4]   ${label}: ${decisionStr} — "${detail}"`);
     }
-  }
-}
-
-function readJSONOrNull(filePath: string): unknown {
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8"));
-  } catch {
-    return null;
   }
 }
 

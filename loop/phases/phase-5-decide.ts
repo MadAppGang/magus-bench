@@ -2,8 +2,12 @@
 /**
  * Phase 5: Decision
  * Reads 3 votes + 3 results, runs deterministic merge/drop logic,
- * executes git merges in order A→B→C, updates baselines, removes branches.
+ * executes git merges in order A→B→C, updates baselines via plugin,
+ * transitions hypothesis states, removes branches.
  * Writes decision-summary.json to loop/iteration-N/decision/
+ *
+ * Now experiment-agnostic: delegates baseline saving to experiment.saveBaseline()
+ * and outcome determination to engine/decision.ts determineOutcome().
  */
 
 import { join } from "node:path";
@@ -12,8 +16,16 @@ import {
   mkdirSync,
   readFileSync,
   writeFileSync,
-  copyFileSync,
 } from "node:fs";
+import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
+import { HypothesisRegistry } from "../engine/hypothesis.ts";
+import { determineOutcome } from "../engine/decision.ts";
+import type {
+  ExperimentResult,
+  ReviewerVote,
+  DecisionSummary,
+  Metrics,
+} from "../engine/types.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -22,65 +34,26 @@ const LOOP_DIR = join(REPO_ROOT, "loop");
 // CLI arg parsing
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv: string[]): { iteration: number; dryRun: boolean } {
+function parseArgs(argv: string[]): {
+  iteration: number;
+  dryRun: boolean;
+  experiment: string | null;
+} {
   let iteration = 1;
   let dryRun = false;
+  let experiment: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--iteration" && argv[i + 1]) {
       iteration = parseInt(argv[i + 1], 10);
       i++;
     } else if (argv[i] === "--dry-run") {
       dryRun = true;
+    } else if (argv[i] === "--experiment" && argv[i + 1]) {
+      experiment = argv[i + 1];
+      i++;
     }
   }
-  return { iteration, dryRun };
-}
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type ApproachLabel = "a" | "b" | "c";
-
-interface ReviewerVote {
-  approach: ApproachLabel;
-  vote: "keep" | "drop" | "conditional";
-  confidence: string;
-  auto_dropped: boolean;
-  rationale: string;
-  concerns: string[];
-}
-
-interface ApproachResult {
-  approach: ApproachLabel;
-  iteration: number;
-  branch: string | null;
-  target_eval: string;
-  run_dir: string | null;
-  status: "success" | "error" | "degraded";
-  error: string | null;
-  metrics: Record<string, unknown> | null;
-  baseline_deltas: Record<string, number> | null;
-  regression_detected: boolean;
-}
-
-interface DecisionEntry {
-  label: ApproachLabel;
-  outcome: "merge" | "drop";
-  reason: string;
-  commit_hash?: string;
-  error?: string;
-}
-
-interface DecisionSummary {
-  iteration: number;
-  merged: ApproachLabel[];
-  dropped: ApproachLabel[];
-  all_dropped: boolean;
-  decisions: DecisionEntry[];
-  new_tw_baseline: unknown | null;
-  new_sr_baseline: unknown | null;
-  decided_at: string;
+  return { iteration, dryRun, experiment };
 }
 
 // ---------------------------------------------------------------------------
@@ -115,8 +88,8 @@ async function spawnShell(
     stderr: "pipe",
   });
   const [stdout, stderr] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
+    new Response(proc.stdout as ReadableStream).text(),
+    new Response(proc.stderr as ReadableStream).text(),
   ]);
   const code = await proc.exited;
   if (code !== 0 && !options.allowFailure) {
@@ -128,11 +101,11 @@ async function spawnShell(
 }
 
 /**
- * Extract the approach title from the approach document or result.
+ * Extract the approach title from the approach document.
  */
 function parseApproachTitle(
   iteration: number,
-  label: ApproachLabel
+  label: "a" | "b" | "c"
 ): string {
   const approachPath = join(
     LOOP_DIR,
@@ -142,7 +115,6 @@ function parseApproachTitle(
   );
   if (!existsSync(approachPath)) return `Approach ${label.toUpperCase()}`;
   const content = readFileSync(approachPath, "utf-8");
-  // Look for "Title:" or "**Title**:" line, or first ## heading
   const titleMatch =
     content.match(/^\*\*Title\*\*:\s*(.+)/m) ??
     content.match(/^Title:\s*(.+)/im) ??
@@ -152,122 +124,13 @@ function parseApproachTitle(
 }
 
 // ---------------------------------------------------------------------------
-// Decision protocol (deterministic)
-// ---------------------------------------------------------------------------
-
-function determineOutcome(
-  vote: ReviewerVote,
-  result: ApproachResult
-): { outcome: "merge" | "drop"; reason: string } {
-  // Hard veto conditions
-  if (result.status === "error") {
-    return { outcome: "drop", reason: `Implementation error: ${result.error ?? "unknown"}` };
-  }
-  if (result.status === "degraded") {
-    return { outcome: "drop", reason: `Degraded eval run: ${result.error ?? "insufficient judges"}` };
-  }
-  if (result.regression_detected) {
-    return { outcome: "drop", reason: "Regression detected by compare-baseline.sh" };
-  }
-
-  // Vote tally
-  if (vote.vote === "drop") {
-    return { outcome: "drop", reason: `Reviewer voted drop: ${vote.rationale.slice(0, 200)}` };
-  }
-
-  // "keep" or "conditional" → merge
-  const reason =
-    vote.vote === "conditional"
-      ? `Reviewer voted conditional (concerns carried to next iteration): ${vote.concerns.join("; ")}`
-      : "Reviewer voted keep";
-  return { outcome: "merge", reason };
-}
-
-// ---------------------------------------------------------------------------
-// Post-merge baseline update
-// ---------------------------------------------------------------------------
-
-async function updateBaseline(
-  label: ApproachLabel,
-  result: ApproachResult,
-  iteration: number
-): Promise<void> {
-  const executeDir = join(LOOP_DIR, `iteration-${iteration}`, "execute");
-
-  if (result.target_eval === "tech-writer-eval" || result.target_eval === "both") {
-    // Run capture-baseline.sh against the saved run results
-    const runResultsDir = join(executeDir, "results", `approach-${label}`);
-    const captureScript = join(REPO_ROOT, "tech-writer-eval", "capture-baseline.sh");
-
-    if (existsSync(captureScript) && existsSync(runResultsDir)) {
-      console.log(`[phase-5] Updating tech-writer-eval baseline from approach-${label} results...`);
-      const res = await spawnShell(
-        ["bash", captureScript, runResultsDir],
-        { cwd: join(REPO_ROOT, "tech-writer-eval"), allowFailure: true }
-      );
-      if (res.code !== 0) {
-        console.warn(`[phase-5] capture-baseline.sh warning (code ${res.code}): ${res.stderr.slice(0, 300)}`);
-      } else {
-        console.log("[phase-5] tech-writer-eval baseline updated");
-      }
-    } else {
-      console.warn(`[phase-5] Cannot update TW baseline: captureScript=${existsSync(captureScript)}, runResultsDir=${existsSync(runResultsDir)}`);
-    }
-  }
-
-  if (result.target_eval === "skill-routing-eval" || result.target_eval === "both") {
-    // Copy the saved skill-routing results as the new baseline
-    const savedLatest = join(
-      executeDir,
-      "results",
-      `approach-${label}`,
-      "skill-routing-latest.json"
-    );
-    const baselinePath = join(REPO_ROOT, "skill-routing-eval", "results", "latest.json");
-
-    if (existsSync(savedLatest)) {
-      console.log(`[phase-5] Updating skill-routing-eval baseline from approach-${label} results...`);
-      mkdirSync(join(REPO_ROOT, "skill-routing-eval", "results"), { recursive: true });
-      copyFileSync(savedLatest, baselinePath);
-      console.log("[phase-5] skill-routing-eval baseline updated");
-    } else {
-      console.warn(`[phase-5] Cannot update SR baseline: ${savedLatest} not found`);
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Validate main branch health (FR-5.2)
-// ---------------------------------------------------------------------------
-
-async function validateMainBranchHealth(): Promise<void> {
-  const scoresPath = join(
-    REPO_ROOT,
-    "tech-writer-eval",
-    "baselines",
-    "latest",
-    "scores.json"
-  );
-  if (existsSync(scoresPath)) {
-    try {
-      JSON.parse(readFileSync(scoresPath, "utf-8"));
-      console.log("[phase-5] Main branch health check: scores.json is valid JSON");
-    } catch {
-      throw new Error(
-        `Main branch health check failed: ${scoresPath} is not valid JSON`
-      );
-    }
-  } else {
-    console.log("[phase-5] Main branch health check: no baseline yet (skipping JSON validation)");
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { iteration, dryRun } = parseArgs(process.argv.slice(2));
+  const { iteration, dryRun, experiment: experimentArg } = parseArgs(
+    process.argv.slice(2)
+  );
   console.log(
     `[phase-5] Starting decide phase for iteration ${iteration}${dryRun ? " (dry-run)" : ""}`
   );
@@ -284,9 +147,33 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const mergedApproaches: ApproachLabel[] = [];
-  const droppedApproaches: ApproachLabel[] = [];
+  // Load experiment plugin
+  const experiment = experimentArg
+    ? await loadExperiment(experimentArg)
+    : await getActiveExperiment(LOOP_DIR);
+  console.log(`[phase-5] Experiment: ${experiment.name}`);
+
+  // Load baseline metrics for comparison
+  const baseline = await experiment.readBaseline();
+
+  // Load hypothesis registry
+  const registry = new HypothesisRegistry(LOOP_DIR);
+
+  const mergedApproaches: string[] = [];
+  const droppedApproaches: string[] = [];
+  const mergeCommits: Record<string, string> = {};
+
+  interface DecisionEntry {
+    label: string;
+    outcome: "merge" | "drop";
+    reason: string;
+    commit_hash?: string;
+    error?: string;
+    hypothesisId?: string | null;
+  }
   const decisions: DecisionEntry[] = [];
+
+  let newBaseline: Metrics | null = null;
 
   // Process in order: A → B → C (FR-5.1)
   for (const label of ["a", "b", "c"] as const) {
@@ -294,34 +181,68 @@ async function main(): Promise<void> {
     const resultPath = join(executeDir, `approach-${label}-result.json`);
 
     if (!existsSync(votePath)) {
-      console.error(`[phase-5] Missing vote for approach ${label}: ${votePath}`);
+      console.error(
+        `[phase-5] Missing vote for approach ${label}: ${votePath}`
+      );
       droppedApproaches.push(label);
       decisions.push({ label, outcome: "drop", reason: "Vote JSON not found" });
       continue;
     }
     if (!existsSync(resultPath)) {
-      console.error(`[phase-5] Missing result for approach ${label}: ${resultPath}`);
+      console.error(
+        `[phase-5] Missing result for approach ${label}: ${resultPath}`
+      );
       droppedApproaches.push(label);
-      decisions.push({ label, outcome: "drop", reason: "Result JSON not found" });
+      decisions.push({
+        label,
+        outcome: "drop",
+        reason: "Result JSON not found",
+      });
       continue;
     }
 
     const vote = readJSON(votePath) as ReviewerVote;
-    const result = readJSON(resultPath) as ApproachResult;
+    const result = readJSON(resultPath) as ExperimentResult;
 
-    const { outcome, reason } = determineOutcome(vote, result);
+    // Use generic determineOutcome from engine/decision.ts
+    const { outcome, reason } = determineOutcome(vote, result, experiment);
     console.log(`[phase-5] Approach ${label}: ${outcome} — ${reason}`);
 
     if (outcome === "merge") {
       if (dryRun) {
-        console.log(`[phase-5] Dry-run: skipping git merge for approach ${label}`);
+        console.log(
+          `[phase-5] Dry-run: skipping git merge for approach ${label}`
+        );
         mergedApproaches.push(label);
-        decisions.push({ label, outcome: "merge", reason: `dry-run: ${reason}` });
+        decisions.push({
+          label,
+          outcome: "merge",
+          reason: `dry-run: ${reason}`,
+          hypothesisId: result.hypothesisId,
+        });
+
+        // Transition hypothesis if linked
+        if (result.hypothesisId) {
+          try {
+            registry.transition(result.hypothesisId, "accepted", {
+              verdict: "accepted",
+              explanation: reason,
+              mergeCommit: null,
+              resolvedAt: new Date().toISOString(),
+              observedMetrics: result.metrics ?? {},
+              baselineMetrics: baseline ?? {},
+            });
+          } catch {
+            // Hypothesis may not exist in registry (e.g. dry-run)
+          }
+        }
         continue;
       }
 
       if (!result.branch) {
-        console.error(`[phase-5] No branch for approach ${label} — treating as drop`);
+        console.error(
+          `[phase-5] No branch for approach ${label} — treating as drop`
+        );
         droppedApproaches.push(label);
         decisions.push({
           label,
@@ -381,9 +302,40 @@ async function main(): Promise<void> {
       );
       const commitHash = headResult.stdout.trim();
       console.log(`[phase-5] Merged approach ${label} as commit ${commitHash}`);
+      mergeCommits[label] = commitHash;
 
-      // Update baseline after successful merge
-      await updateBaseline(label, result, iteration);
+      // Update baseline via plugin (replaces hardcoded eval-specific logic)
+      const runDir = result.runDir ?? join(executeDir, "results", `approach-${label}`);
+      try {
+        await experiment.saveBaseline(runDir);
+        console.log(`[phase-5] Baseline updated via ${experiment.name}.saveBaseline()`);
+        newBaseline = await experiment.readBaseline();
+      } catch (err) {
+        console.warn(
+          `[phase-5] Warning: saveBaseline failed for approach ${label}: ${err}`
+        );
+      }
+
+      // Transition hypothesis if linked
+      if (result.hypothesisId) {
+        try {
+          registry.transition(result.hypothesisId, "accepted", {
+            verdict: "accepted",
+            explanation: reason,
+            mergeCommit: commitHash,
+            resolvedAt: new Date().toISOString(),
+            observedMetrics: result.metrics ?? {},
+            baselineMetrics: baseline ?? {},
+          });
+          console.log(
+            `[phase-5] Hypothesis ${result.hypothesisId} transitioned to accepted`
+          );
+        } catch (err) {
+          console.warn(
+            `[phase-5] Warning: hypothesis transition failed: ${err}`
+          );
+        }
+      }
 
       mergedApproaches.push(label);
       decisions.push({
@@ -391,6 +343,7 @@ async function main(): Promise<void> {
         outcome: "merge",
         reason,
         commit_hash: commitHash,
+        hypothesisId: result.hypothesisId,
       });
 
       // Remove the branch (worktree already removed in phase-3)
@@ -398,11 +351,32 @@ async function main(): Promise<void> {
         ["git", "-C", REPO_ROOT, "branch", "-d", result.branch],
         { allowFailure: true }
       );
-
     } else {
       // Drop
       droppedApproaches.push(label);
-      decisions.push({ label, outcome: "drop", reason });
+      decisions.push({ label, outcome: "drop", reason, hypothesisId: result.hypothesisId });
+
+      // Transition hypothesis to rejected/inconclusive/isolation_failed
+      if (result.hypothesisId) {
+        const verdictStatus =
+          result.status === "isolation_failed"
+            ? "isolation_failed"
+            : result.regressionDetected
+            ? "rejected"
+            : "inconclusive";
+        try {
+          registry.transition(result.hypothesisId, verdictStatus, {
+            verdict: verdictStatus as "rejected" | "inconclusive" | "isolation_failed",
+            explanation: reason,
+            mergeCommit: null,
+            resolvedAt: new Date().toISOString(),
+            observedMetrics: result.metrics ?? {},
+            baselineMetrics: baseline ?? {},
+          });
+        } catch {
+          // Hypothesis may not exist
+        }
+      }
 
       // Remove branch if it exists
       if (result.branch) {
@@ -414,11 +388,6 @@ async function main(): Promise<void> {
     }
   }
 
-  // Validate main branch health (FR-5.2)
-  if (!dryRun) {
-    await validateMainBranchHealth();
-  }
-
   // Log no-improvement event (FR-5.3)
   if (mergedApproaches.length === 0) {
     console.log(
@@ -426,37 +395,15 @@ async function main(): Promise<void> {
     );
   }
 
-  // Read updated baselines for summary
-  const newTWBaseline = readJSONOrNull(
-    join(REPO_ROOT, "tech-writer-eval", "baselines", "latest", "scores.json")
-  );
-  const newSRBaseline = readJSONOrNull(
-    join(REPO_ROOT, "skill-routing-eval", "results", "latest.json")
-  );
-
-  const summary: DecisionSummary = {
+  // Build decision summary — generic shape using engine types
+  const summary: DecisionSummary & { decisions: typeof decisions; new_baseline?: Metrics | null } = {
     iteration,
     merged: mergedApproaches,
     dropped: droppedApproaches,
     all_dropped: mergedApproaches.length === 0,
-    decisions,
-    new_tw_baseline: mergedApproaches.some((l) => {
-      const r = readJSONOrNull(
-        join(executeDir, `approach-${l}-result.json`)
-      ) as ApproachResult | null;
-      return r?.target_eval === "tech-writer-eval" || r?.target_eval === "both";
-    })
-      ? newTWBaseline
-      : null,
-    new_sr_baseline: mergedApproaches.some((l) => {
-      const r = readJSONOrNull(
-        join(executeDir, `approach-${l}-result.json`)
-      ) as ApproachResult | null;
-      return r?.target_eval === "skill-routing-eval" || r?.target_eval === "both";
-    })
-      ? newSRBaseline
-      : null,
+    new_baseline: newBaseline,
     decided_at: new Date().toISOString(),
+    decisions,
   };
 
   writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
@@ -466,50 +413,29 @@ async function main(): Promise<void> {
   );
 
   // Human-readable decisions summary
-  console.log(`[phase-5] ── Decisions ────────────────────────────────────`);
+  console.log(
+    `[phase-5] ── Decisions ────────────────────────────────────`
+  );
   for (const entry of decisions) {
     const label = entry.label.toUpperCase();
     if (entry.outcome === "merge") {
       const hash = entry.commit_hash ? ` → commit ${entry.commit_hash}` : "";
-      const title = parseApproachTitle(iteration, entry.label);
+      const title = parseApproachTitle(iteration, entry.label as "a" | "b" | "c");
       const mergeMsg = `loop: iter ${iteration} approach ${entry.label} — ${title}`;
-      console.log(`[phase-5]   ${label}: ✓ MERGED${hash} "${mergeMsg.slice(0, 80)}"`);
+      console.log(
+        `[phase-5]   ${label}: ✓ MERGED${hash} "${mergeMsg.slice(0, 80)}"`
+      );
     } else {
       const reason = entry.reason.slice(0, 80);
       console.log(`[phase-5]   ${label}: ✗ DROPPED — ${reason}`);
     }
   }
 
-  // New baseline summary
-  const newTWFmt = (() => {
-    if (!summary.new_tw_baseline) return null;
-    const tw = summary.new_tw_baseline as Record<string, unknown>;
-    const ws = tw.weighted_scores as Record<string, number> | undefined;
-    const bc = tw.borda_counts as Record<string, number> | undefined;
-    const stats = tw.statistical_tests as Record<string, unknown> | undefined;
-    const fp = stats?.friedman_p;
-    const parts: string[] = ["TW"];
-    if (ws?.techwriter != null) parts.push(`techwriter=${ws.techwriter.toFixed(1)}`);
-    if (bc?.techwriter != null) parts.push(`borda=${bc.techwriter}`);
-    if (fp != null) parts.push(`p=${(fp as number).toFixed(2)}`);
-    return parts.join(" ");
-  })();
-
-  const newSRFmt = (() => {
-    if (!summary.new_sr_baseline) return null;
-    const sr = summary.new_sr_baseline as Record<string, unknown>;
-    const results = (sr.results as Record<string, unknown>) ?? sr;
-    const stats = results.stats as Record<string, unknown> | undefined;
-    if (!stats) return null;
-    const s = (stats.successes as number) ?? 0;
-    const f = (stats.failures as number) ?? 0;
-    const t = s + f;
-    return `SR pass=${t > 0 ? Math.round((s / t) * 100) : "?"}%`;
-  })();
-
-  const baselineParts = [newTWFmt, newSRFmt].filter(Boolean);
-  if (baselineParts.length > 0) {
-    console.log(`[phase-5] New baseline: ${baselineParts.join(" | ")}`);
+  // New baseline summary via plugin
+  if (newBaseline) {
+    console.log(
+      `[phase-5] New baseline: ${experiment.formatMetrics(newBaseline)}`
+    );
   } else if (mergedApproaches.length === 0) {
     console.log(`[phase-5] Baseline unchanged (no merges)`);
   }

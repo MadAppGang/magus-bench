@@ -1,5 +1,6 @@
 {
   "version": "1.0",
+  "experiment_id": "tech-writer-quality",
   "max_iterations": null,
   "cost_table": {
     "tech_writer_api_call_usd": 0.002,
