@@ -134,6 +134,31 @@ function readFullJournal(loopDir: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Brief summary extraction
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the first meaningful title line from a research brief.
+ * Prefers the first line starting with '#', falls back to the first non-empty line.
+ */
+function extractBriefTitle(content: string): string {
+  const lines = content.split("\n");
+  // Prefer the first line starting with '#'
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("#")) {
+      return trimmed.replace(/^#+\s*/, "").trim().slice(0, 100);
+    }
+  }
+  // Fallback: first non-empty line
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed) return trimmed.slice(0, 100);
+  }
+  return "(empty brief)";
+}
+
+// ---------------------------------------------------------------------------
 // Dry-run stubs
 // ---------------------------------------------------------------------------
 
@@ -233,10 +258,16 @@ async function main(): Promise<void> {
 
   if (dryRun) {
     console.log("[phase-1] Dry-run: writing stub research briefs");
-    writeFileSync(briefAPath, makeDryRunBriefA(iteration));
-    writeFileSync(briefBPath, makeDryRunBriefB(iteration));
-    writeFileSync(briefCPath, makeDryRunBriefC(iteration));
-    console.log(`[phase-1] Research complete (dry-run) for iteration ${iteration}`);
+    const dryA = makeDryRunBriefA(iteration);
+    const dryB = makeDryRunBriefB(iteration);
+    const dryC = makeDryRunBriefC(iteration);
+    writeFileSync(briefAPath, dryA);
+    writeFileSync(briefBPath, dryB);
+    writeFileSync(briefCPath, dryC);
+    console.log(`[phase-1] ✎ Research complete:`);
+    console.log(`[phase-1]   Agent A (methodology): ${extractBriefTitle(dryA)}`);
+    console.log(`[phase-1]   Agent B (prompts):     ${extractBriefTitle(dryB)}`);
+    console.log(`[phase-1]   Agent C (structure):   ${extractBriefTitle(dryC)}`);
     process.exit(0);
   }
 
@@ -339,7 +370,10 @@ async function main(): Promise<void> {
   writeFileSync(briefBPath, briefB);
   writeFileSync(briefCPath, briefC);
 
-  console.log(`[phase-1] Research complete for iteration ${iteration}`);
+  console.log(`[phase-1] ✎ Research complete:`);
+  console.log(`[phase-1]   Agent A (methodology): ${extractBriefTitle(briefA)}`);
+  console.log(`[phase-1]   Agent B (prompts):     ${extractBriefTitle(briefB)}`);
+  console.log(`[phase-1]   Agent C (structure):   ${extractBriefTitle(briefC)}`);
   console.log(`[phase-1]   Agent A brief: ${briefAPath}`);
   console.log(`[phase-1]   Agent B brief: ${briefBPath}`);
   console.log(`[phase-1]   Agent C brief: ${briefCPath}`);

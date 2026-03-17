@@ -336,6 +336,28 @@ async function main(): Promise<void> {
   console.log(
     `[phase-4] Analysis complete: ${votes.map((v) => `${v.approach}=${v.vote}`).join(", ")}`
   );
+
+  // Human-readable votes summary
+  console.log(`[phase-4] ── Review Votes ─────────────────────────────────`);
+  for (const vote of votes) {
+    const label = vote.approach.toUpperCase();
+    if (vote.auto_dropped) {
+      const reason = vote.concerns?.[0] ?? vote.rationale?.slice(0, 60) ?? "auto-dropped";
+      console.log(`[phase-4]   ${label}: DROP (auto) — "${reason}"`);
+    } else {
+      const decisionStr =
+        vote.vote === "keep"
+          ? `KEEP (${vote.confidence} confidence)`
+          : vote.vote === "conditional"
+          ? `KEEP conditional (${vote.confidence} confidence)`
+          : `DROP (${vote.confidence} confidence)`;
+      // Use primary_metric_delta as the first part of the rationale snippet
+      const detail = vote.primary_metric_delta && vote.primary_metric_delta !== "unknown"
+        ? vote.primary_metric_delta.slice(0, 60)
+        : vote.rationale?.slice(0, 60) ?? "";
+      console.log(`[phase-4]   ${label}: ${decisionStr} — "${detail}"`);
+    }
+  }
 }
 
 function readJSONOrNull(filePath: string): unknown {

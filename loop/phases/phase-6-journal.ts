@@ -520,6 +520,16 @@ async function main(): Promise<void> {
   // Append to journal.md
   const journalPath = join(LOOP_DIR, "journal.md");
   appendFileSync(journalPath, entry, "utf-8");
+
+  // Read decision summary for the 1-liner
+  const decisionSummaryPath = join(LOOP_DIR, `iteration-${iteration}`, "decision", "decision-summary.json");
+  const decisionSummary = readJSONOrNull(decisionSummaryPath) as {
+    merged?: string[];
+    dropped?: string[];
+  } | null;
+  const mergedCount = decisionSummary?.merged?.length ?? 0;
+  const droppedCount = decisionSummary?.dropped?.length ?? 0;
+  console.log(`[phase-6] Journal updated — iteration ${iteration} appended (merged: ${mergedCount}, dropped: ${droppedCount})`);
   console.log(`[phase-6] Appended iteration ${iteration} entry to ${journalPath}`);
 
   if (!dryRun) {

@@ -152,6 +152,29 @@ function parsePlannerOutput(output: string): {
 }
 
 /**
+ * Extract the title from an approach document.
+ * Looks for "**Title**:" or "Title:" or the first ## heading.
+ */
+function extractApproachTitle(doc: string): string {
+  const match =
+    doc.match(/^\*\*Title\*\*:\s*(.+)/m) ??
+    doc.match(/^Title:\s*(.+)/im) ??
+    doc.match(/^##\s+(?:Approach\s+[ABC]\s+[—–-]+\s+)?(.+)/m);
+  return match?.[1]?.trim().slice(0, 80) ?? "(no title)";
+}
+
+/**
+ * Extract the target eval from an approach document.
+ * Looks for "**Target eval**:" or "Target eval:".
+ */
+function extractTargetEval(doc: string): string {
+  const match =
+    doc.match(/^\*\*Target[_\s]eval\*\*:\s*(.+)/im) ??
+    doc.match(/^Target[_\s]eval:\s*(.+)/im);
+  return match?.[1]?.trim().slice(0, 40) ?? "unknown";
+}
+
+/**
  * Validate that an approach document contains the required fields.
  * Logs a warning but does not throw — a partial doc is better than aborting.
  */
@@ -285,11 +308,17 @@ async function main(): Promise<void> {
 
   if (dryRun) {
     console.log("[phase-2] Dry-run: writing stub plan documents");
-    writeFileSync(join(outDir, "approach-a.md"), makeDryRunApproachA(iteration));
-    writeFileSync(join(outDir, "approach-b.md"), makeDryRunApproachB(iteration));
-    writeFileSync(join(outDir, "approach-c.md"), makeDryRunApproachC(iteration));
+    const dryA = makeDryRunApproachA(iteration);
+    const dryB = makeDryRunApproachB(iteration);
+    const dryC = makeDryRunApproachC(iteration);
+    writeFileSync(join(outDir, "approach-a.md"), dryA);
+    writeFileSync(join(outDir, "approach-b.md"), dryB);
+    writeFileSync(join(outDir, "approach-c.md"), dryC);
     writeFileSync(summaryPath, makeDryRunPlanSummary(iteration));
-    console.log(`[phase-2] Plan complete (dry-run) for iteration ${iteration}`);
+    console.log(`[phase-2] ✎ Plan — 3 approaches selected:`);
+    console.log(`[phase-2]   A: ${extractApproachTitle(dryA).padEnd(50)}  → target: ${extractTargetEval(dryA)}`);
+    console.log(`[phase-2]   B: ${extractApproachTitle(dryB).padEnd(50)}  → target: ${extractTargetEval(dryB)}`);
+    console.log(`[phase-2]   C: ${extractApproachTitle(dryC).padEnd(50)}  → target: ${extractTargetEval(dryC)}`);
     process.exit(0);
   }
 
@@ -353,12 +382,18 @@ async function main(): Promise<void> {
   validateApproachDoc("c", approachC);
 
   // Write outputs
-  writeFileSync(join(outDir, "approach-a.md"), approachA || planOutput);
-  writeFileSync(join(outDir, "approach-b.md"), approachB || "(no approach B parsed)");
-  writeFileSync(join(outDir, "approach-c.md"), approachC || "(no approach C parsed)");
+  const docA = approachA || planOutput;
+  const docB = approachB || "(no approach B parsed)";
+  const docC = approachC || "(no approach C parsed)";
+  writeFileSync(join(outDir, "approach-a.md"), docA);
+  writeFileSync(join(outDir, "approach-b.md"), docB);
+  writeFileSync(join(outDir, "approach-c.md"), docC);
   writeFileSync(summaryPath, planSummary || planOutput);
 
-  console.log(`[phase-2] Plan complete for iteration ${iteration}`);
+  console.log(`[phase-2] ✎ Plan — 3 approaches selected:`);
+  console.log(`[phase-2]   A: ${extractApproachTitle(docA).padEnd(50)}  → target: ${extractTargetEval(docA)}`);
+  console.log(`[phase-2]   B: ${extractApproachTitle(docB).padEnd(50)}  → target: ${extractTargetEval(docB)}`);
+  console.log(`[phase-2]   C: ${extractApproachTitle(docC).padEnd(50)}  → target: ${extractTargetEval(docC)}`);
   console.log(`[phase-2]   approach-a.md: ${join(outDir, "approach-a.md")}`);
   console.log(`[phase-2]   approach-b.md: ${join(outDir, "approach-b.md")}`);
   console.log(`[phase-2]   approach-c.md: ${join(outDir, "approach-c.md")}`);

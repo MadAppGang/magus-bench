@@ -29,6 +29,80 @@ import {
 import { readState, writeState } from "./lib/state.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
+
+// ---------------------------------------------------------------------------
+// Baseline summary helpers
+// ---------------------------------------------------------------------------
+
+function readBaselineSummary(): string {
+  const twPath = join(REPO_ROOT, "tech-writer-eval", "baselines", "latest", "scores.json");
+  const srPath = join(REPO_ROOT, "skill-routing-eval", "results", "latest.json");
+
+  const parts: string[] = [];
+
+  // Tech-writer-eval
+  try {
+    if (existsSync(twPath)) {
+      const tw = JSON.parse(readFileSync(twPath, "utf-8")) as Record<string, unknown>;
+      const ws = tw.weighted_scores as Record<string, number> | undefined;
+      const bc = tw.borda_counts as Record<string, number> | undefined;
+      const stats = tw.statistical_tests as Record<string, unknown> | undefined;
+      const fp = stats?.friedman_p ?? (tw.friedman_p as number | undefined);
+      const weighted = ws?.techwriter;
+      const borda = bc?.techwriter;
+      const twParts: string[] = ["TW"];
+      if (weighted != null) twParts.push(`techwriter=${weighted.toFixed(1)}`);
+      if (borda != null) twParts.push(`borda=${borda}`);
+      if (fp != null) twParts.push(`p=${(fp as number).toFixed(2)}`);
+      parts.push(twParts.join(" "));
+    } else {
+      parts.push("TW (no baseline)");
+    }
+  } catch {
+    parts.push("TW (read error)");
+  }
+
+  // Skill-routing-eval
+  try {
+    if (existsSync(srPath)) {
+      const sr = JSON.parse(readFileSync(srPath, "utf-8")) as Record<string, unknown>;
+      const results = (sr.results as Record<string, unknown>) ?? sr;
+      const stats = results.stats as Record<string, unknown> | undefined;
+      if (stats) {
+        const s = (stats.successes as number) ?? 0;
+        const f = (stats.failures as number) ?? 0;
+        const t = s + f;
+        parts.push(`SR pass=${t > 0 ? Math.round((s / t) * 100) : "?"}% (${s}/${t})`);
+      } else {
+        parts.push("SR (no stats)");
+      }
+    } else {
+      parts.push("SR (no baseline)");
+    }
+  } catch {
+    parts.push("SR (read error)");
+  }
+
+  return parts.join(" | ");
+}
+
+function formatIterationOutcome(iteration: number): string {
+  const summaryPath = join(LOOP_DIR, `iteration-${iteration}`, "decision", "decision-summary.json");
+  if (!existsSync(summaryPath)) return `Iteration ${iteration} result: (no decision summary)`;
+
+  try {
+    const summary = JSON.parse(readFileSync(summaryPath, "utf-8")) as {
+      merged: string[];
+      dropped: string[];
+    };
+    const mergedCount = summary.merged?.length ?? 0;
+    const total = (summary.merged?.length ?? 0) + (summary.dropped?.length ?? 0);
+    const newBaseline = readBaselineSummary();
+    return `Iteration ${iteration} result: merged ${mergedCount}/${total} approaches | baseline now: ${newBaseline}`;
+  } catch {
+    return `Iteration ${iteration} result: (could not read decision summary)`;
+  }
+}
 const LOOP_DIR = join(REPO_ROOT, "loop");
 
 // ---------------------------------------------------------------------------
@@ -339,6 +413,7 @@ async function main(): Promise<void> {
       }
 
       console.log(`\n[loop] ====== ITERATION ${iteration} ======`);
+      console.log(`[loop] Baseline: ${readBaselineSummary()}`);
       logEstimatedCost(config);
 
       // Ensure iteration directory exists
@@ -415,6 +490,9 @@ async function main(): Promise<void> {
       // After --resume-from-phase is consumed for this iteration, clear it
       // so subsequent iterations run all phases normally
       args.resumeFromPhase = null;
+
+      // Print iteration outcome summary
+      console.log(`[loop] ${formatIterationOutcome(iteration)}`);
 
       // Check stall condition (FR-5.3, FR-5.4)
       const summary = readDecisionSummary(iteration);

@@ -579,6 +579,68 @@ async function copyEvalResults(
 }
 
 // ---------------------------------------------------------------------------
+// Human-readable result formatting
+// ---------------------------------------------------------------------------
+
+/**
+ * Format TW metrics into a compact summary string.
+ * e.g. "techwriter=8.5 borda=16 friedman_p=0.44"
+ */
+function formatTWMetrics(metrics: TechWriterMetrics): string {
+  const parts: string[] = [];
+  const tw = metrics.weighted_scores?.techwriter;
+  const borda = metrics.borda_counts?.techwriter;
+  const fp = metrics.friedman_p;
+  if (tw != null) parts.push(`techwriter=${tw.toFixed(1)}`);
+  if (borda != null) parts.push(`borda=${borda}`);
+  if (fp != null) parts.push(`friedman_p=${fp.toFixed(2)}`);
+  return parts.join(" ") || "(no metrics)";
+}
+
+/**
+ * Format SR metrics into a compact summary string.
+ * e.g. "pass_rate=86% (19/22)"
+ */
+function formatSRMetrics(metrics: SkillRoutingMetrics): string {
+  const pct = Math.round(metrics.pass_rate * 100);
+  return `pass_rate=${pct}% (${metrics.passed}/${metrics.total_tests})`;
+}
+
+/**
+ * Format baseline deltas as a compact string.
+ * e.g. "weighted +0.2, borda +1, p -0.22"
+ */
+function formatDeltas(
+  deltas: Record<string, number> | null,
+  targetEval: string
+): string {
+  if (!deltas) return "(no delta)";
+  const parts: string[] = [];
+  if (targetEval === "tech-writer-eval" || targetEval === "both") {
+    if (deltas.techwriter_weighted != null)
+      parts.push(`weighted ${deltas.techwriter_weighted >= 0 ? "+" : ""}${deltas.techwriter_weighted.toFixed(2)}`);
+    if (deltas.techwriter_borda != null)
+      parts.push(`borda ${deltas.techwriter_borda >= 0 ? "+" : ""}${deltas.techwriter_borda}`);
+    if (deltas.friedman_p_delta != null && !isNaN(deltas.friedman_p_delta))
+      parts.push(`p ${deltas.friedman_p_delta >= 0 ? "+" : ""}${deltas.friedman_p_delta.toFixed(2)}`);
+  }
+  if (targetEval === "skill-routing-eval") {
+    if (deltas.pass_rate_delta != null)
+      parts.push(`pass_rate ${deltas.pass_rate_delta >= 0 ? "+" : ""}${Math.round(deltas.pass_rate_delta * 100)}%`);
+  }
+  return parts.join(", ") || "0";
+}
+
+/**
+ * Truncate an error message to a short snippet suitable for terminal display.
+ */
+function shortError(err: string | null): string {
+  if (!err) return "(unknown error)";
+  // Strip leading whitespace/newlines, take first 80 chars
+  return err.replace(/^\s+/, "").split("\n")[0].slice(0, 80);
+}
+
+// ---------------------------------------------------------------------------
 // ApproachResult type
 // ---------------------------------------------------------------------------
 
@@ -725,6 +787,22 @@ async function executeApproach(
     };
 
     writeFileSync(resultPath, JSON.stringify(result, null, 2));
+
+    // Human-readable result summary
+    const regrStr = result.regression_detected ? " regression=yes" : " regression=no";
+    console.log(`[phase-3] ✓ Approach ${label.toUpperCase()}: success`);
+    if (targetEval === "tech-writer-eval" || targetEval === "both") {
+      const twM = (twEvalResult?.metrics as TechWriterMetrics | undefined);
+      if (twM) console.log(`[phase-3]     TW: ${formatTWMetrics(twM)}${regrStr}`);
+    }
+    if (targetEval === "skill-routing-eval" || targetEval === "both") {
+      const srM = (srEvalResult?.metrics as SkillRoutingMetrics | undefined);
+      if (srM) console.log(`[phase-3]     SR: ${formatSRMetrics(srM)}${regrStr}`);
+    }
+    if (result.baseline_deltas) {
+      console.log(`[phase-3]     Δ baseline: ${formatDeltas(result.baseline_deltas, targetEval)}`);
+    }
+
     return result;
 
   } catch (err: unknown) {
@@ -751,6 +829,11 @@ async function executeApproach(
     };
 
     writeFileSync(resultPath, JSON.stringify(result, null, 2));
+
+    // Human-readable error summary
+    console.log(`[phase-3] ✗ Approach ${label.toUpperCase()}: ${result.status}`);
+    console.log(`[phase-3]     ${shortError(result.error)}`);
+
     return result;
 
   } finally {
@@ -797,13 +880,31 @@ async function main(): Promise<void> {
     )
   );
 
-  // Summary
+  // Summary table
+  console.log(`[phase-3] ── Execute Summary ──────────────────────────────`);
   for (const result of results) {
-    const statusStr =
-      result.status === "success"
-        ? `success (regression=${result.regression_detected})`
-        : `${result.status}: ${result.error ?? ""}`;
-    console.log(`[phase-3] Approach ${result.approach}: ${statusStr}`);
+    const icon = result.status === "success" ? "✓" : "✗";
+    const label = result.approach.toUpperCase();
+    if (result.status === "success" && result.metrics) {
+      const isTV = result.target_eval === "tech-writer-eval" || result.target_eval === "both";
+      const isSR = result.target_eval === "skill-routing-eval" || result.target_eval === "both";
+      let metricStr = "";
+      if (isTV) {
+        const twM = result.metrics as TechWriterMetrics;
+        const tw = twM.weighted_scores?.techwriter;
+        const borda = twM.borda_counts?.techwriter;
+        metricStr = `TW weighted=${tw != null ? tw.toFixed(1) : "?"} borda=${borda ?? "?"}`;
+      } else if (isSR) {
+        const srM = result.metrics as SkillRoutingMetrics;
+        metricStr = `SR pass=${Math.round(srM.pass_rate * 100)}%`;
+      }
+      const deltaStr = result.baseline_deltas
+        ? `Δ${formatDeltas(result.baseline_deltas, result.target_eval)}`
+        : "";
+      console.log(`[phase-3]   ${label}: ${icon} success  ${metricStr.padEnd(32)} ${deltaStr}`);
+    } else {
+      console.log(`[phase-3]   ${label}: ${icon} ${result.status}    ${shortError(result.error)}`);
+    }
   }
 
   const successCount = results.filter((r) => r.status === "success").length;

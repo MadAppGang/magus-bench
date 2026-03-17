@@ -464,6 +464,55 @@ async function main(): Promise<void> {
   console.log(
     `[phase-5] Decision complete for iteration ${iteration}: merged=[${mergedApproaches.join(",")}] dropped=[${droppedApproaches.join(",")}]`
   );
+
+  // Human-readable decisions summary
+  console.log(`[phase-5] ── Decisions ────────────────────────────────────`);
+  for (const entry of decisions) {
+    const label = entry.label.toUpperCase();
+    if (entry.outcome === "merge") {
+      const hash = entry.commit_hash ? ` → commit ${entry.commit_hash}` : "";
+      const title = parseApproachTitle(iteration, entry.label);
+      const mergeMsg = `loop: iter ${iteration} approach ${entry.label} — ${title}`;
+      console.log(`[phase-5]   ${label}: ✓ MERGED${hash} "${mergeMsg.slice(0, 80)}"`);
+    } else {
+      const reason = entry.reason.slice(0, 80);
+      console.log(`[phase-5]   ${label}: ✗ DROPPED — ${reason}`);
+    }
+  }
+
+  // New baseline summary
+  const newTWFmt = (() => {
+    if (!summary.new_tw_baseline) return null;
+    const tw = summary.new_tw_baseline as Record<string, unknown>;
+    const ws = tw.weighted_scores as Record<string, number> | undefined;
+    const bc = tw.borda_counts as Record<string, number> | undefined;
+    const stats = tw.statistical_tests as Record<string, unknown> | undefined;
+    const fp = stats?.friedman_p;
+    const parts: string[] = ["TW"];
+    if (ws?.techwriter != null) parts.push(`techwriter=${ws.techwriter.toFixed(1)}`);
+    if (bc?.techwriter != null) parts.push(`borda=${bc.techwriter}`);
+    if (fp != null) parts.push(`p=${(fp as number).toFixed(2)}`);
+    return parts.join(" ");
+  })();
+
+  const newSRFmt = (() => {
+    if (!summary.new_sr_baseline) return null;
+    const sr = summary.new_sr_baseline as Record<string, unknown>;
+    const results = (sr.results as Record<string, unknown>) ?? sr;
+    const stats = results.stats as Record<string, unknown> | undefined;
+    if (!stats) return null;
+    const s = (stats.successes as number) ?? 0;
+    const f = (stats.failures as number) ?? 0;
+    const t = s + f;
+    return `SR pass=${t > 0 ? Math.round((s / t) * 100) : "?"}%`;
+  })();
+
+  const baselineParts = [newTWFmt, newSRFmt].filter(Boolean);
+  if (baselineParts.length > 0) {
+    console.log(`[phase-5] New baseline: ${baselineParts.join(" | ")}`);
+  } else if (mergedApproaches.length === 0) {
+    console.log(`[phase-5] Baseline unchanged (no merges)`);
+  }
 }
 
 main().catch((err) => {
