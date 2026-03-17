@@ -65,18 +65,43 @@ interface ShellResult {
 
 async function spawnShell(
   args: string[],
-  options: { cwd?: string; allowFailure?: boolean } = {}
+  options: {
+    cwd?: string;
+    allowFailure?: boolean;
+    env?: Record<string, string | undefined>;
+    timeout?: number;
+  } = {}
 ): Promise<ShellResult> {
   const proc = Bun.spawn(args, {
     cwd: options.cwd ?? REPO_ROOT,
     stdout: "pipe",
     stderr: "pipe",
+    env: options.env ?? process.env,
   });
+
+  // Optional timeout: kill process if it exceeds the limit
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  if (options.timeout) {
+    timer = setTimeout(() => {
+      timedOut = true;
+      proc.kill("SIGTERM");
+    }, options.timeout);
+  }
+
   const [stdout, stderr] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
   ]);
   const code = await proc.exited;
+  if (timer) clearTimeout(timer);
+
+  if (timedOut) {
+    throw new Error(
+      `Command timed out after ${options.timeout! / 1000}s: ${args.join(" ")}\nstderr: ${stderr.slice(0, 500)}`
+    );
+  }
+
   if (code !== 0 && !options.allowFailure) {
     throw new Error(
       `Command failed (code ${code}): ${args.join(" ")}\nstderr: ${stderr.slice(0, 1000)}`
@@ -390,19 +415,27 @@ async function runTechWriterEval(
     "--output-dir",
     outputDir,
     "--compare-baseline",
+    "--timeout",
+    "900",
   ];
 
   const result = await spawnShell(args, {
     cwd: wtPath,
     allowFailure: true,
+    env: { ...process.env, CLAUDECODE: undefined },
+    timeout: 1200_000, // 20 min outer timeout for the full eval run
   });
 
   // code 1 = regression detected (compare-baseline exits 1)
+  // code 143 = killed by SIGTERM (timeout) — treat as error, not regression
   // code >1 = real failure
   const regressionDetected = result.code === 1;
   if (result.code > 1) {
+    const hint = result.code === 143
+      ? " (SIGTERM — likely timeout. The eval run exceeded the time limit.)"
+      : "";
     throw new Error(
-      `tech-writer-eval run.sh failed with code ${result.code}. stderr: ${result.stderr.slice(0, 500)}`
+      `tech-writer-eval run.sh failed with code ${result.code}${hint}. stderr: ${result.stderr.slice(0, 500)}`
     );
   }
 
@@ -438,11 +471,15 @@ async function runSkillRoutingEval(
 
   if (!dryRun) {
     const result = await spawnShell(
-      ["npx", "promptfoo", "eval", "-c", configPath],
-      { cwd: wtPath, allowFailure: true }
+      ["npx", "promptfoo@0.103.5", "eval", "-c", configPath, "--no-progress-bar"],
+      { cwd: wtPath, allowFailure: true, env: { ...process.env, PROMPTFOO_DISABLE_TELEMETRY: "1" } }
     );
-    if (result.code !== 0) {
+    // code 100 = promptfoo telemetry shutdown timeout — if results exist, treat as success
+    if (result.code !== 0 && result.code !== 100) {
       throw new Error(`promptfoo eval failed (code ${result.code}): ${result.stderr.slice(0, 500)}`);
+    }
+    if (result.code === 100 && !existsSync(latestPath)) {
+      throw new Error(`promptfoo eval failed (code 100) and no results produced: ${result.stderr.slice(0, 500)}`);
     }
   }
 
