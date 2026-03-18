@@ -2,3 +2,10 @@
 node_modules/
 *.pid
 *.tmp
+
+.mnemex/
+.claude/.coaching/
+.claude/claudish-usage.log
+.claude/skills/*/evals/
+.claudemem/
+ai-docs/sessions/
