@@ -92,3 +92,75 @@ fatal: '/tmp/magus-bench-loop/iteration-1-approach-c' already exists
 
 No resolved hypotheses yet.
 
+
+---
+
+## Iteration 2 — 2026-03-18 07:10:40 UTC
+
+**Git HEAD at start**: bc82c76
+**Baseline at start**:
+No baseline available
+
+### Phase 1: Research
+
+**Agent A**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-a-brief.md
+
+**Agent B**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-b-brief.md
+
+**Agent C**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Risk | Expected Delta |
+|---|-------|------|----------------|
+| A | Bundle all judge rubric improvements into judge-template-4way.md | low | Inter-judge variance on `diagrams`, `writing_craft`, and `conciseness` expected  |
+| B | Fix test-cases.json — diagrams description sync and Gemini judge swap | low | Removing intra-family judge bias is expected to reduce systematic Borda inflatio |
+| C | Author topic-matched skill-injection reference document | medium | The existing reference (VS Code Extension Anatomy) covers an unrelated topic, ca |
+
+Full plan: loop/iteration-2/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Error details (A): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Error details (B): Command failed (code 128): git -C /Users/jack/mag/magus-bench worktree add /tmp/magus-bench-loop/iteration-2-approach-b -b loop/iter-2/approach-b
+stderr: Preparing worktree (new branch 'loop/iter-2/ap
+Error details (C): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Results archived: loop/iteration-2/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
+|----------|------|------------|--------------|--------------|
+| A | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+| B | drop | high | yes | Implementation failed: Command failed (code 128): git -C /Users/jack/mag/magus-bench worktree add /tmp/magus-bench-loop/iteration-2-approach-b -b loop/iter-2/approach-b
+stderr: Preparing worktree (new branch 'loop/iter-2/approach-b')
+fatal: '/tmp/magus-bench-loop/iteration-2-approach-b' already exists
+ |
+| C | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+Full votes: loop/iteration-2/analyze/
+
+### Phase 5: Decision
+
+**Dropped**:
+- loop/iter-2/approach-a (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+- loop/iter-2/approach-b (Command failed (code 128): git -C /Users/jack/mag/magus-bench worktree add /tmp/magus-bench-loop/iteration-2-approach-b -b loop/iter-2/approach-b
+stderr: Preparing worktree (new branch 'loop/iter-2/approach-b')
+fatal: '/tmp/magus-bench-loop/iteration-2-approach-b' already exists
+)
+- loop/iter-2/approach-c (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+
+### Hypothesis Registry
+
+## Hypothesis History
+
+No resolved hypotheses yet.
+
