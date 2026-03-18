@@ -9,3 +9,8 @@ node_modules/
 .claude/skills/*/evals/
 .claudemem/
 ai-docs/sessions/
+loop/STALLED
+loop/iteration-*/
+loop/state.json
+tech-writer-eval/.claude/
+tech-writer-eval/results/
