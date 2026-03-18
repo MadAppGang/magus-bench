@@ -419,10 +419,8 @@ const plugin = {
 
   async formatBaseline(): Promise<string> {
     const baseline = await plugin.readBaseline();
-    if (!baseline) {
-      return "## agent-routing baseline\n- No baseline available";
-    }
-    return `## agent-routing baseline\n- ${plugin.formatMetrics(baseline)}`;
+    if (!baseline) return "No baseline available";
+    return plugin.formatMetrics(baseline);
   },
 
   // -------------------------------------------------------------------------

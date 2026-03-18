@@ -26,6 +26,8 @@ import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.t
 import { verifyIsolation } from "../engine/diff-verifier.ts";
 import type { Experiment, ExperimentResult, Metrics } from "../engine/types.ts";
 import { RegressionError } from "../experiments/tech-writer-quality/experiment.ts";
+import { renderApproachTable } from "../lib/tui.ts";
+import type { ApproachDisplay } from "../lib/tui.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -514,27 +516,31 @@ async function main(): Promise<void> {
   // Read baseline once for delta display
   const baseline = await experiment.readBaseline();
 
-  // Summary table
-  console.log(
-    `[phase-3] ── Execute Summary ──────────────────────────────`
-  );
-  for (const result of results) {
-    const icon = result.status === "success" ? "✓" : "✗";
-    const label = result.label.toUpperCase();
+  // Render TUI approach table with final results
+  const approachDisplays: ApproachDisplay[] = results.map((result) => {
+    const title = extractApproachTitle(
+      approaches.find((a) => a.label === result.label)?.doc ?? ""
+    );
     if (result.status === "success" && result.metrics) {
-      const metricStr = experiment.formatMetrics(result.metrics);
+      const metricsStr = experiment.formatMetrics(result.metrics);
       const deltaStr = baseline
         ? experiment.formatDelta(result.metrics, baseline)
-        : "(no baseline)";
-      console.log(
-        `[phase-3]   ${label}: ${icon} success  ${metricStr.padEnd(32)} Δ${deltaStr}`
-      );
-    } else {
-      console.log(
-        `[phase-3]   ${label}: ${icon} ${result.status.padEnd(16)}  ${shortError(result.error)}`
-      );
+        : undefined;
+      return {
+        label: result.label.toUpperCase(),
+        status: "success" as const,
+        title,
+        metrics: metricsStr,
+        delta: deltaStr,
+      };
     }
-  }
+    return {
+      label: result.label.toUpperCase(),
+      status: result.status as ApproachDisplay["status"],
+      title: title || shortError(result.error),
+    };
+  });
+  renderApproachTable(approachDisplays);
 
   const successCount = results.filter((r) => r.status === "success").length;
   const errorCount = results.filter((r) => r.status === "error").length;

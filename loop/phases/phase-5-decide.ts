@@ -26,6 +26,8 @@ import type {
   DecisionSummary,
   Metrics,
 } from "../engine/types.ts";
+import { renderDecisionTable, renderHypothesisVerdicts } from "../lib/tui.ts";
+import type { DecisionDisplay } from "../lib/tui.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -412,32 +414,59 @@ async function main(): Promise<void> {
     `[phase-5] Decision complete for iteration ${iteration}: merged=[${mergedApproaches.join(",")}] dropped=[${droppedApproaches.join(",")}]`
   );
 
-  // Human-readable decisions summary
-  console.log(
-    `[phase-5] ── Decisions ────────────────────────────────────`
-  );
-  for (const entry of decisions) {
-    const label = entry.label.toUpperCase();
+  // Render TUI decision table
+  const decisionDisplays: DecisionDisplay[] = decisions.map((entry) => {
     if (entry.outcome === "merge") {
-      const hash = entry.commit_hash ? ` → commit ${entry.commit_hash}` : "";
       const title = parseApproachTitle(iteration, entry.label as "a" | "b" | "c");
-      const mergeMsg = `loop: iter ${iteration} approach ${entry.label} — ${title}`;
-      console.log(
-        `[phase-5]   ${label}: ✓ MERGED${hash} "${mergeMsg.slice(0, 80)}"`
-      );
-    } else {
-      const reason = entry.reason.slice(0, 80);
-      console.log(`[phase-5]   ${label}: ✗ DROPPED — ${reason}`);
+      return {
+        label: entry.label,
+        outcome: "merged" as const,
+        reason: title,
+        commit: entry.commit_hash,
+      };
     }
+    return {
+      label: entry.label,
+      outcome: "dropped" as const,
+      reason: entry.reason,
+    };
+  });
+
+  const newBaselineStr = newBaseline
+    ? experiment.formatMetrics(newBaseline)
+    : undefined;
+  renderDecisionTable(decisionDisplays, newBaselineStr);
+
+  if (!newBaseline && mergedApproaches.length === 0) {
+    console.log(`[phase-5] Baseline unchanged (no merges)`);
   }
 
-  // New baseline summary via plugin
-  if (newBaseline) {
-    console.log(
-      `[phase-5] New baseline: ${experiment.formatMetrics(newBaseline)}`
-    );
-  } else if (mergedApproaches.length === 0) {
-    console.log(`[phase-5] Baseline unchanged (no merges)`);
+  // Render hypothesis verdicts if any hypotheses were tracked this iteration
+  {
+    const allHypothesisIds = decisions
+      .map((d) => d.hypothesisId)
+      .filter((id): id is string => Boolean(id));
+    if (allHypothesisIds.length > 0) {
+      const registry = new HypothesisRegistry(LOOP_DIR);
+      const verdicts = allHypothesisIds.flatMap((id) => {
+        try {
+          const h = registry.get(id);
+          if (!h) return [];
+          return [
+            {
+              id: h.id,
+              status: h.status,
+              description: h.title,
+            },
+          ];
+        } catch {
+          return [];
+        }
+      });
+      if (verdicts.length > 0) {
+        renderHypothesisVerdicts(verdicts);
+      }
+    }
   }
 }
 

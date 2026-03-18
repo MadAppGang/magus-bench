@@ -31,6 +31,10 @@ import {
 import { readState, writeState } from "./lib/state.ts";
 import { getActiveExperiment } from "./engine/plugin-registry.ts";
 import type { Experiment } from "./engine/types.ts";
+import {
+  renderIterationHeader,
+  renderIterationSummary,
+} from "./lib/tui.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -293,15 +297,6 @@ async function runPhaseScript(
 }
 
 // ---------------------------------------------------------------------------
-// Cost estimate log
-// ---------------------------------------------------------------------------
-
-function logEstimatedCost(config: LoopConfig): void {
-  const cost = config.estimated_cost_per_iteration_usd ?? 0.25;
-  console.log(`[loop] Estimated cost for this iteration: ~$${cost.toFixed(2)}`);
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -403,10 +398,13 @@ async function main(): Promise<void> {
         break;
       }
 
-      console.log(`\n[loop] ====== ITERATION ${iteration} ======`);
       const iterBaseline = await experiment.formatBaseline();
-      console.log(`[loop] ${iterBaseline}`);
-      logEstimatedCost(config);
+      renderIterationHeader(
+        iteration,
+        effectiveMaxIterations,
+        experiment.name,
+        iterBaseline
+      );
 
       // Ensure iteration directory exists
       mkdirSync(join(LOOP_DIR, `iteration-${iteration}`), { recursive: true });
@@ -491,7 +489,35 @@ async function main(): Promise<void> {
       args.resumeFromPhase = null;
 
       // Print iteration outcome summary
-      console.log(`[loop] ${formatIterationOutcome(iteration, experiment)}`);
+      const outcomeStr = formatIterationOutcome(iteration, experiment);
+      console.log(`[loop] ${outcomeStr}`);
+      // Render TUI summary
+      {
+        const summaryPath = join(
+          LOOP_DIR,
+          `iteration-${iteration}`,
+          "decision",
+          "decision-summary.json"
+        );
+        try {
+          if (existsSync(summaryPath)) {
+            const summaryData = JSON.parse(readFileSync(summaryPath, "utf-8")) as {
+              merged?: string[];
+              dropped?: string[];
+              new_baseline?: Record<string, unknown>;
+            };
+            const mergedCount = summaryData.merged?.length ?? 0;
+            const total =
+              (summaryData.merged?.length ?? 0) + (summaryData.dropped?.length ?? 0);
+            const baselineStr = summaryData.new_baseline
+              ? experiment.formatMetrics(summaryData.new_baseline as Record<string, number | string | boolean | null>)
+              : await experiment.formatBaseline();
+            renderIterationSummary(iteration, mergedCount, total, baselineStr);
+          }
+        } catch {
+          // Non-fatal: just skip the TUI summary if data is unreadable
+        }
+      }
 
       // Check stall condition (FR-5.3, FR-5.4)
       const summary = readDecisionSummary(iteration);

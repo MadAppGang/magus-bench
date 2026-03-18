@@ -395,10 +395,8 @@ const plugin = {
 
   async formatBaseline(): Promise<string> {
     const baseline = await plugin.readBaseline();
-    if (!baseline) {
-      return "## tech-writer-quality baseline\n- No baseline available";
-    }
-    return `## tech-writer-quality baseline\n- ${plugin.formatMetrics(baseline)}`;
+    if (!baseline) return "No baseline available";
+    return plugin.formatMetrics(baseline);
   },
 
   // -------------------------------------------------------------------------

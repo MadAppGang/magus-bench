@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnAgent } from "../lib/agent.ts";
 import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
 import { HypothesisRegistry } from "../engine/hypothesis.ts";
+import { renderResearchSummary } from "../lib/tui.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -289,12 +290,11 @@ async function main(): Promise<void> {
     writeFileSync(briefAPath, dryA);
     writeFileSync(briefBPath, dryB);
     writeFileSync(briefCPath, dryC);
-    console.log(`[phase-1] ✎ Research complete:`);
-    console.log(
-      `[phase-1]   Agent A (methodology): ${extractBriefTitle(dryA)}`
-    );
-    console.log(`[phase-1]   Agent B (prompts):     ${extractBriefTitle(dryB)}`);
-    console.log(`[phase-1]   Agent C (structure):   ${extractBriefTitle(dryC)}`);
+    renderResearchSummary([
+      { agent: "A (methodology)", title: extractBriefTitle(dryA) },
+      { agent: "B (prompts)", title: extractBriefTitle(dryB) },
+      { agent: "C (structure)", title: extractBriefTitle(dryC) },
+    ]);
     process.exit(0);
   }
 
@@ -375,12 +375,11 @@ async function main(): Promise<void> {
   writeFileSync(briefBPath, briefB);
   writeFileSync(briefCPath, briefC);
 
-  console.log(`[phase-1] ✎ Research complete:`);
-  console.log(
-    `[phase-1]   Agent A (methodology): ${extractBriefTitle(briefA)}`
-  );
-  console.log(`[phase-1]   Agent B (prompts):     ${extractBriefTitle(briefB)}`);
-  console.log(`[phase-1]   Agent C (structure):   ${extractBriefTitle(briefC)}`);
+  renderResearchSummary([
+    { agent: "A (methodology)", title: extractBriefTitle(briefA) },
+    { agent: "B (prompts)", title: extractBriefTitle(briefB) },
+    { agent: "C (structure)", title: extractBriefTitle(briefC) },
+  ]);
   console.log(`[phase-1]   Agent A brief: ${briefAPath}`);
   console.log(`[phase-1]   Agent B brief: ${briefBPath}`);
   console.log(`[phase-1]   Agent C brief: ${briefCPath}`);

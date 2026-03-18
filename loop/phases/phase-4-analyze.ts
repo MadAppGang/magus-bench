@@ -16,6 +16,8 @@ import { spawnAgent } from "../lib/agent.ts";
 import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
 import { DECISION_PROTOCOL_TEXT } from "../engine/decision.ts";
 import type { ExperimentResult, ReviewerVote } from "../engine/types.ts";
+import { renderApproachTable } from "../lib/tui.ts";
+import type { ApproachDisplay } from "../lib/tui.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -321,31 +323,30 @@ async function main(): Promise<void> {
     `[phase-4] Analysis complete: ${votes.map((v) => `${v.label}=${v.vote}`).join(", ")}`
   );
 
-  // Human-readable votes summary
-  console.log(
-    `[phase-4] ── Review Votes ─────────────────────────────────`
-  );
-  for (const vote of votes) {
-    const label = vote.label.toUpperCase();
+  // Render TUI approach table with vote results
+  const approachDisplays: ApproachDisplay[] = votes.map((vote) => {
     if (vote.auto_dropped) {
       const reason =
         vote.concerns?.[0] ?? vote.rationale?.slice(0, 60) ?? "auto-dropped";
-      console.log(`[phase-4]   ${label}: DROP (auto) — "${reason}"`);
-    } else {
-      const decisionStr =
-        vote.vote === "keep"
-          ? `KEEP (${vote.confidence} confidence)`
-          : vote.vote === "conditional"
-          ? `KEEP conditional (${vote.confidence} confidence)`
-          : `DROP (${vote.confidence} confidence)`;
-      const detail =
-        vote.primary_metric_delta &&
-        vote.primary_metric_delta !== "unknown"
-          ? vote.primary_metric_delta.slice(0, 60)
-          : vote.rationale?.slice(0, 60) ?? "";
-      console.log(`[phase-4]   ${label}: ${decisionStr} — "${detail}"`);
+      return {
+        label: vote.label.toUpperCase(),
+        status: "dropped" as const,
+        title: reason,
+      };
     }
-  }
+    const isKeep = vote.vote === "keep" || vote.vote === "conditional";
+    const delta =
+      vote.primary_metric_delta && vote.primary_metric_delta !== "unknown"
+        ? vote.primary_metric_delta
+        : undefined;
+    return {
+      label: vote.label.toUpperCase(),
+      status: (isKeep ? "success" : "dropped") as ApproachDisplay["status"],
+      title: `${vote.vote} (${vote.confidence})`,
+      delta,
+    };
+  });
+  renderApproachTable(approachDisplays);
 }
 
 main().catch((err) => {

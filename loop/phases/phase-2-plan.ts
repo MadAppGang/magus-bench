@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnAgent } from "../lib/agent.ts";
 import { getActiveExperiment, loadExperiment } from "../engine/plugin-registry.ts";
 import { HypothesisRegistry } from "../engine/hypothesis.ts";
+import { renderApproachTable } from "../lib/tui.ts";
 
 const REPO_ROOT = "/Users/jack/mag/magus-bench";
 const LOOP_DIR = join(REPO_ROOT, "loop");
@@ -355,16 +356,11 @@ async function main(): Promise<void> {
     writeFileSync(join(outDir, "approach-b.md"), dryB);
     writeFileSync(join(outDir, "approach-c.md"), dryC);
     writeFileSync(summaryPath, makeDryRunPlanSummary(iteration));
-    console.log(`[phase-2] ✎ Plan — 3 approaches selected:`);
-    console.log(
-      `[phase-2]   A: ${extractApproachTitle(dryA).padEnd(50)}  → target: ${experiment.name}`
-    );
-    console.log(
-      `[phase-2]   B: ${extractApproachTitle(dryB).padEnd(50)}  → target: ${experiment.name}`
-    );
-    console.log(
-      `[phase-2]   C: ${extractApproachTitle(dryC).padEnd(50)}  → target: ${experiment.name}`
-    );
+    renderApproachTable([
+      { label: "A", status: "waiting", title: extractApproachTitle(dryA) },
+      { label: "B", status: "waiting", title: extractApproachTitle(dryB) },
+      { label: "C", status: "waiting", title: extractApproachTitle(dryC) },
+    ]);
     process.exit(0);
   }
 
@@ -445,16 +441,11 @@ async function main(): Promise<void> {
   writeFileSync(join(outDir, "approach-c.md"), docC);
   writeFileSync(summaryPath, planSummary || planOutput);
 
-  console.log(`[phase-2] ✎ Plan — 3 approaches selected:`);
-  console.log(
-    `[phase-2]   A: ${extractApproachTitle(docA).padEnd(50)}  → ${experiment.name}`
-  );
-  console.log(
-    `[phase-2]   B: ${extractApproachTitle(docB).padEnd(50)}  → ${experiment.name}`
-  );
-  console.log(
-    `[phase-2]   C: ${extractApproachTitle(docC).padEnd(50)}  → ${experiment.name}`
-  );
+  renderApproachTable([
+    { label: "A", status: "waiting", title: extractApproachTitle(docA) },
+    { label: "B", status: "waiting", title: extractApproachTitle(docB) },
+    { label: "C", status: "waiting", title: extractApproachTitle(docC) },
+  ]);
   console.log(`[phase-2]   approach-a.md: ${join(outDir, "approach-a.md")}`);
   console.log(`[phase-2]   approach-b.md: ${join(outDir, "approach-b.md")}`);
   console.log(`[phase-2]   approach-c.md: ${join(outDir, "approach-c.md")}`);
