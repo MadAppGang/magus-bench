@@ -164,3 +164,68 @@ fatal: '/tmp/magus-bench-loop/iteration-2-approach-b' already exists
 
 No resolved hypotheses yet.
 
+
+---
+
+## Iteration 3 — 2026-03-18 07:34:52 UTC
+
+**Git HEAD at start**: 225c330
+**Baseline at start**:
+No baseline available
+
+### Phase 1: Research
+
+**Agent A**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-a-brief.md
+
+**Agent B**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-b-brief.md
+
+**Agent C**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Risk | Expected Delta |
+|---|-------|------|----------------|
+| A | Expand test-cases.json to multi-topic array and parameterize generation prompts | medium | `friedman_p` goes from NaN/undefined (degenerate with df=0) to a computable valu |
+| B | Replace mismatched reference document with topic-matched human-curated content | medium | Reference approach `accuracy` scores become comparable to the other three approa |
+| C | Add calibration anchors and criterion-first evaluation order to judge template | low | Inter-judge score standard deviation for `slop` and `writing_craft` expected to  |
+
+Full plan: loop/iteration-3/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Error details (A): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Error details (B): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Error details (C): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Results archived: loop/iteration-3/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
+|----------|------|------------|--------------|--------------|
+| A | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+| B | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+| C | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+Full votes: loop/iteration-3/analyze/
+
+### Phase 5: Decision
+
+**Dropped**:
+- loop/iter-3/approach-a (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+- loop/iter-3/approach-b (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+- loop/iter-3/approach-c (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+
+### Hypothesis Registry
+
+## Hypothesis History
+
+No resolved hypotheses yet.
+
