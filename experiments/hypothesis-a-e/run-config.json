@@ -1,0 +1,35 @@
+{
+  "run_id": "run-20260318-142948",
+  "timestamp": "2026-03-18T03:29:48Z",
+  "suite": "routing-synthetic",
+  "models": [
+    "internal"
+  ],
+  "test_cases": [
+    "delegate-debug-01-var-01",
+    "delegate-debug-01-var-02",
+    "delegate-investigate-01-var-01",
+    "delegate-investigate-01-var-02",
+    "delegate-research-01-var-01",
+    "delegate-research-01-var-02",
+    "direct-simple-01-var-01",
+    "direct-simple-01-var-02",
+    "explicit-researcher-01-var-01",
+    "explicit-researcher-01-var-02",
+    "skill-claudemem-explicit-01-var-01",
+    "skill-claudemem-explicit-01-var-02",
+    "skill-claudemem-implicit-01-var-01",
+    "skill-claudemem-implicit-01-var-02",
+    "skill-not-agent-01-var-01",
+    "skill-not-agent-01-var-02",
+    "skill-routing-detective-01-var-01",
+    "skill-routing-detective-01-var-02",
+    "skill-simple-no-skill-01-var-01",
+    "skill-simple-no-skill-01-var-02",
+    "skill-spelling-bash-01-var-01",
+    "skill-spelling-bash-01-var-02"
+  ],
+  "parallel": 5,
+  "framework_version": "1.0.0",
+  "claudish_version": "claudish version 5.13.0"
+}

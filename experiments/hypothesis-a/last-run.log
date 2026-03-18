@@ -1,0 +1,162 @@
+=== E2E Test Runner ===
+Suite:        routing-synthetic
+Suite dir:    /Users/jack/mag/claude-code/autotest/routing-synthetic
+Models:       internal
+Test cases:   22 / 219
+Runs/case:    1
+Total runs:   22
+Parallel:     5
+Timeout:      300s
+Output:       /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933
+Framework:    v1.0.0
+Analyzer:     /Users/jack/mag/claude-code/autotest/routing-synthetic/analyze-results.sh
+
+=== Starting Tests ===
+
+  RUN  [delegate-debug-01-var-01] model=internal run=1
+  RUN  [delegate-debug-01-var-02] model=internal run=1
+  RUN  [delegate-investigate-01-var-01] model=internal run=1
+  RUN  [delegate-investigate-01-var-02] model=internal run=1
+  RUN  [delegate-research-01-var-01] model=internal run=1
+  RUN  [delegate-research-01-var-02] model=internal run=1
+  RUN  [direct-simple-01-var-01] model=internal run=1
+  RUN  [direct-simple-01-var-02] model=internal run=1
+  RUN  [explicit-researcher-01-var-01] model=internal run=1
+  RUN  [explicit-researcher-01-var-02] model=internal run=1
+  RUN  [skill-claudemem-explicit-01-var-01] model=internal run=1
+  RUN  [skill-claudemem-explicit-01-var-02] model=internal run=1
+  RUN  [skill-claudemem-implicit-01-var-01] model=internal run=1
+  RUN  [skill-claudemem-implicit-01-var-02] model=internal run=1
+  RUN  [skill-not-agent-01-var-01] model=internal run=1
+  RUN  [skill-not-agent-01-var-02] model=internal run=1
+  RUN  [skill-routing-detective-01-var-01] model=internal run=1
+  RUN  [skill-routing-detective-01-var-02] model=internal run=1
+  RUN  [skill-simple-no-skill-01-var-01] model=internal run=1
+  RUN  [skill-simple-no-skill-01-var-02] model=internal run=1
+  RUN  [skill-spelling-bash-01-var-01] model=internal run=1
+  RUN  [skill-spelling-bash-01-var-02] model=internal run=1
+
+  Waiting for 22 parallel jobs to complete...
+  OK  [direct-simple-01-var-02] model=internal duration=53s
+  OK  [direct-simple-01-var-01] model=internal duration=53s
+  OK  [skill-simple-no-skill-01-var-02] model=internal duration=56s
+  OK  [skill-simple-no-skill-01-var-01] model=internal duration=59s
+  OK  [skill-spelling-bash-01-var-01] model=internal duration=66s
+  OK  [skill-claudemem-explicit-01-var-02] model=internal duration=67s
+  OK  [skill-spelling-bash-01-var-02] model=internal duration=67s
+  OK  [skill-claudemem-explicit-01-var-01] model=internal duration=71s
+  OK  [skill-not-agent-01-var-02] model=internal duration=83s
+  OK  [skill-claudemem-implicit-01-var-01] model=internal duration=89s
+  OK  [skill-claudemem-implicit-01-var-02] model=internal duration=90s
+  OK  [skill-not-agent-01-var-01] model=internal duration=169s
+  OK  [delegate-debug-01-var-01] model=internal duration=197s
+  OK  [delegate-debug-01-var-02] model=internal duration=216s
+  OK  [delegate-investigate-01-var-02] model=internal duration=249s
+  OK  [skill-routing-detective-01-var-01] model=internal duration=261s
+  OK  [skill-routing-detective-01-var-02] model=internal duration=285s
+  OK  [delegate-investigate-01-var-01] model=internal duration=294s
+  OK  [delegate-research-01-var-01] model=internal duration=589s
+  OK  [explicit-researcher-01-var-02] model=internal duration=594s
+  OK  [explicit-researcher-01-var-01] model=internal duration=856s
+  OK  [delegate-research-01-var-02] model=internal duration=1180s
+
+=== All 22 tests completed ===
+
+=== Results Summary ===
+
+Total: 22 | Pass: 13 | Fail: 4 | Error: 5
+Pass Rate: 59.1%
+
+=== Detailed Results ===
+
+TEST_ID                        MODEL                     EXPECTED                  ACTUAL                    RESULT     TIME  
+------------------------------------------------------------------------------------------------------------------------------
+delegate-debug-01-var-01       internal                  dev:debugger              NO_TASK_CALL              NO_DELEGATION  197s
+delegate-debug-01-var-02       internal                  dev:debugger              NO_TASK_CALL              NO_DELEGATION  216s
+delegate-investigate-01-var-01 internal                  code-analysis:detective   code-analysis:detective   PASS        294s
+delegate-investigate-01-var-02 internal                  code-analysis:detective   code-analysis:claudemem-search FAIL        249s
+delegate-research-01-var-01    internal                  dev:researcher            code-analysis:claudemem-search FAIL        589s
+delegate-research-01-var-02    internal                  dev:researcher            NO_TASK_CALL              NO_DELEGATION 1180s
+direct-simple-01-var-01        internal                  NO_TASK_CALL              code-analysis:claudemem-search FAIL_OVER_DELEGATED   53s
+direct-simple-01-var-02        internal                  NO_TASK_CALL              code-analysis:claudemem-search FAIL_OVER_DELEGATED   53s
+explicit-researcher-01-var-01  internal                  dev:researcher            NO_TASK_CALL              NO_DELEGATION  856s
+explicit-researcher-01-var-02  internal                  dev:researcher            NO_TASK_CALL              NO_DELEGATION  594s
+skill-claudemem-explicit-01-var-01 internal                                            code-analysis:claudemem-search PASS         71s
+skill-claudemem-explicit-01-var-02 internal                                            code-analysis:claudemem-search PASS         67s
+skill-claudemem-implicit-01-var-01 internal                                            NO_TASK_CALL              PASS         89s
+skill-claudemem-implicit-01-var-02 internal                                            NO_TASK_CALL              PASS         90s
+skill-not-agent-01-var-01      internal                                            NO_TASK_CALL              PASS        169s
+skill-not-agent-01-var-02      internal                                            NO_TASK_CALL              PASS         83s
+skill-routing-detective-01-var-01 internal                                            NO_TASK_CALL              PASS        261s
+skill-routing-detective-01-var-02 internal                                            NO_TASK_CALL              PASS        285s
+skill-simple-no-skill-01-var-01 internal                                            code-analysis:claudemem-search PASS         59s
+skill-simple-no-skill-01-var-02 internal                                            code-analysis:claudemem-search PASS         56s
+skill-spelling-bash-01-var-01  internal                                            NO_TASK_CALL              PASS         66s
+skill-spelling-bash-01-var-02  internal                                            NO_TASK_CALL              PASS         67s
+
+Agent Distribution:
+  NO_TASK_CALL: 13 (59.1%)
+  code-analysis:claudemem-search: 8 (36.4%)
+  code-analysis:detective: 1 (4.5%)
+
+Results:      /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933/results-summary.json
+
+=== Running Suite Analyzer ===
+Command: /Users/jack/mag/claude-code/autotest/routing-synthetic/analyze-results.sh /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933
+
+=== Routing-Synthetic Analysis ===
+Results: /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933
+
+Test cases:   219 total
+  Skill-type: 79 (transcript analysis)
+  Agent-type: 140 (agent selection)
+
+=== Skill-Type Analysis ===
+  PASS [skill-claudemem-explicit-01-var-01]
+  PASS [skill-claudemem-explicit-01-var-02]
+  PASS [skill-claudemem-implicit-01-var-01]
+  PASS [skill-claudemem-implicit-01-var-02]
+  PASS [skill-not-agent-01-var-01]
+  PASS [skill-not-agent-01-var-02]
+  ERROR [skill-routing-detective-01-var-01] Analyzer returned invalid JSON
+  ERROR [skill-routing-detective-01-var-02] Analyzer returned invalid JSON
+  PASS [skill-simple-no-skill-01-var-01]
+  PASS [skill-simple-no-skill-01-var-02]
+  PASS [skill-spelling-bash-01-var-01]
+  PASS [skill-spelling-bash-01-var-02]
+
+Skill results: 10 passed, 2 failed, 0 skipped
+
+=== Agent-Type Analysis ===
+Agent results: 13 passed, 9 failed, 0 errors
+
+By category:
+  delegate-debug-01-var-01      0/2 passed
+  delegate-research-01-var-01   0/2 passed
+  direct-simple-01-var-01       0/2 passed
+  explicit-researcher-01-var-01 0/2 passed
+  delegate-investigate-01-var-011/2 passed
+  skill-claudemem-explicit-01-va2/2 passed
+  skill-claudemem-implicit-01-va2/2 passed
+  skill-not-agent-01-var-01     2/2 passed
+  skill-routing-detective-01-var2/2 passed
+  skill-simple-no-skill-01-var-02/2 passed
+  skill-spelling-bash-01-var-01 2/2 passed
+
+=== Combined Results ===
+Total:  34
+Passed: 23 (67%)
+Failed: 11
+Errors: 0
+
+Analysis: /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933/routing-analysis.json
+
+=== Run Complete ===
+Output:       /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933
+Summary:      /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933/results-summary.json
+Config:       /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933/config.json
+
+To analyze:   /Users/jack/mag/claude-code/autotest/subagents/analyze-results.sh /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933
+To replay:    bun run /Users/jack/mag/claude-code/autotest/framework/replay.ts /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933/<model>/<case>/ --interactive
+To compare:   bun run /Users/jack/mag/claude-code/autotest/framework/comparator.ts /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933
+To metrics:   bun run /Users/jack/mag/claude-code/autotest/framework/parsers/debug-log-parser.ts /Users/jack/mag/claude-code/autotest/routing-synthetic/results/run-20260318-140933/<model>/<case>/debug.log --format table
