@@ -29,11 +29,18 @@ export interface VerificationResult {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_ALWAYS_ALLOWED = [
+  // Lock files
   "bun.lockb",
   "package-lock.json",
   "yarn.lock",
   "pnpm-lock.yaml",
   "*.lock",
+  // Claude Code hooks/plugins write these in every session
+  ".claude/.coaching/**",
+  ".claude/settings.json",
+  ".claude/settings.local.json",
+  // Common auto-generated files
+  ".gitignore",
 ];
 
 // ---------------------------------------------------------------------------
