@@ -45,7 +45,7 @@ interface ShellResult {
   stderr: string;
 }
 
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 min of silence = hung
+const IDLE_TIMEOUT_MS = 45 * 60 * 1000; // 45 min — eval runs 4 sequential generations + 7 parallel judges, each step can take 3-8 min with no stdout
 
 async function spawnShell(
   args: string[],

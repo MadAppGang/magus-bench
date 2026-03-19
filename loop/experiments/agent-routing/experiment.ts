@@ -32,7 +32,7 @@ interface ShellResult {
   stderr: string;
 }
 
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 min of silence = hung
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 min — promptfoo runs 22 test cases × 2 models sequentially
 
 async function spawnShell(
   args: string[],
