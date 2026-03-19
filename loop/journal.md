@@ -142,3 +142,74 @@ stderr: )
 
 No resolved hypotheses yet.
 
+
+---
+
+## Iteration 3 — 2026-03-19 16:19:29 UTC
+
+**Git HEAD at start**: 4238bf1
+**Baseline at start**:
+No baseline available
+
+### Phase 1: Research
+
+**Agent A**: Now I have everything I need. The data reveals several concrete failure modes to address:
+Full brief: loop/iteration-3/research/agent-a-brief.md
+
+**Agent B**: Now I have everything I need for a thorough analysis. Let me produce the proposals.
+Full brief: loop/iteration-3/research/agent-b-brief.md
+
+**Agent C**: [agent error] claude -p exited with code 143. stderr: 
+Full brief: loop/iteration-3/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Risk | Expected Delta |
+|---|-------|------|----------------|
+| A | Replace off-topic reference.md with a topic-matched Magus skill injection docume | low | Reference arm `accuracy` +2–3 points (no longer penalized for describing VS Code |
+| B | Add calibration anchors, anti-inflation check, and evidence-first reasoning to j | low | Inter-judge SD on `writing_craft`, `readability`, `structure`, `conciseness`, `d |
+| C | Add loop-topic prompt and reference document as second evaluation topic infrastr | medium | This approach has zero effect on current metrics — `run.sh` continues to read th |
+
+Full plan: loop/iteration-3/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Error details (A): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/exec
+Error details (B): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/exec
+Error details (C): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/exec
+Results archived: loop/iteration-3/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
+|----------|------|------------|--------------|--------------|
+| A | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-a
+stderr:  |
+| B | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-b
+stderr:  |
+| C | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-c
+stderr:  |
+Full votes: loop/iteration-3/analyze/
+
+### Phase 5: Decision
+
+**Dropped**:
+- loop/iter-3/approach-a (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-a
+stderr: )
+- loop/iter-3/approach-b (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-b
+stderr: )
+- loop/iter-3/approach-c (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-c
+stderr: )
+
+### Hypothesis Registry
+
+## Hypothesis History
+
+No resolved hypotheses yet.
+
