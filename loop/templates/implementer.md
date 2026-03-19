@@ -55,6 +55,24 @@ If the approach document specifies files outside this list, do NOT modify them. 
 - If a specified change is ambiguous, implement the most conservative interpretation
 - If a file does not exist at the specified path, report the error clearly and stop
 
+## CRITICAL: Eval pipeline compatibility constraints
+
+The eval harness (run.sh, promptfoo, etc.) is a FIXED pipeline. You MUST NOT:
+
+- Add template variables (like `{{TOPIC_TITLE}}`, `{{VAR}}`) to prompt files — the pipeline does NOT perform template substitution. Prompts are passed as-is to the model.
+- Change the command-line interface of run.sh or the eval harness entry point
+- Change the output format of eval results (JSON report structure, file paths)
+- Change how judges are invoked or how their responses are parsed
+- Add new dependencies or tools that the pipeline doesn't already have
+
+You CAN:
+- Change the CONTENT of prompt files (wording, criteria descriptions, instructions)
+- Change the CONTENT of test-cases.json/yaml (add topics, modify criteria weights, update model IDs)
+- Change reference documents (swap or improve reference content)
+- Add new prompt files IF the pipeline already supports loading them (check the config)
+
+When in doubt, read the eval harness scripts to understand what the pipeline expects before making changes.
+
 ## Completion
 
 When you have finished applying all changes and committed them, output a brief summary:

@@ -521,7 +521,7 @@ if ! $SKIP_JUDGE; then
           || true
         extract_output "$judge_dir/transcript.jsonl" "$judge_dir/response.txt" 2>/dev/null || true
       else
-        # claudish-based judge
+        # claudish-based judge — stderr to stdout so parent sees activity
         claudish \
           --model "$judge_model" \
           --stdin \
@@ -529,9 +529,10 @@ if ! $SKIP_JUDGE; then
           --json \
           < "$judge_prompt" \
           > "$judge_dir/transcript.jsonl" \
-          2>/dev/null || true
+          2>&1 || true
         extract_output "$judge_dir/transcript.jsonl" "$judge_dir/response.txt" 2>/dev/null || true
       fi
+      echo "  [judge] $judge_id done"
     ) &
     JUDGE_PIDS+=($!)
   done
@@ -539,7 +540,30 @@ if ! $SKIP_JUDGE; then
   echo ""
   echo "  Waiting for ${#JUDGE_PIDS[@]} judges to complete..."
 
-  # Wait for all judges
+  # Wait for all judges with heartbeat (prints dot every 60s to keep parent alive)
+  while true; do
+    # Check if any judge PIDs are still running
+    still_running=false
+    for pid in "${JUDGE_PIDS[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then
+        still_running=true
+        break
+      fi
+    done
+    if ! $still_running; then
+      break
+    fi
+    sleep 60
+    # Count how many are done
+    done_count=0
+    for pid in "${JUDGE_PIDS[@]}"; do
+      if ! kill -0 "$pid" 2>/dev/null; then
+        done_count=$((done_count + 1))
+      fi
+    done
+    echo "  [heartbeat] ${done_count}/${#JUDGE_PIDS[@]} judges complete..."
+  done
+  # Reap all child processes
   for pid in "${JUDGE_PIDS[@]}"; do
     wait "$pid" 2>/dev/null || true
   done
