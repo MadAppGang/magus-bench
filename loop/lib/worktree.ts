@@ -19,7 +19,31 @@ export async function createWorktree(
   const worktreePath = join(worktreeBaseDir, `iteration-${iteration}-approach-${label}`);
   const branch = `loop/iter-${iteration}/approach-${label}`;
 
+  // Clean up stale directory if it exists (leftover from crashed run)
+  const { existsSync } = await import("node:fs");
+  if (existsSync(worktreePath)) {
+    console.log(`[worktree] Removing stale directory: ${worktreePath}`);
+    try {
+      await runGit(repoRoot, ["worktree", "remove", "--force", worktreePath]);
+    } catch {
+      // If git doesn't know about it, just rm the directory
+      const rm = Bun.spawn(["rm", "-rf", worktreePath], { stdout: "pipe", stderr: "pipe" });
+      await rm.exited;
+    }
+  }
+
+  // Delete stale branch if it exists (leftover from previous iteration that wasn't cleaned)
+  try {
+    await runGit(repoRoot, ["branch", "-D", branch]);
+    console.log(`[worktree] Deleted stale branch: ${branch}`);
+  } catch {
+    // Branch doesn't exist — expected for fresh runs
+  }
+
   // Ensure base dir exists
+  const { mkdirSync } = await import("node:fs");
+  mkdirSync(worktreeBaseDir, { recursive: true });
+
   await runGit(repoRoot, ["worktree", "add", worktreePath, "-b", branch]);
 
   return { path: worktreePath, branch };
@@ -131,6 +155,21 @@ export async function pruneStaleWorktrees(repoRoot: string): Promise<void> {
         // Also delete the branch
         await removeWorktreeBranch(repoRoot, branch);
       }
+    }
+  } catch { /* ignore */ }
+
+  // Also clean any orphaned loop/* branches that have no worktree
+  try {
+    const brProc = Bun.spawn(
+      ["git", "-C", repoRoot, "branch", "--list", "loop/*"],
+      { stdout: "pipe", stderr: "pipe" }
+    );
+    const brOutput = await new Response(brProc.stdout).text();
+    await brProc.exited;
+    const branches = brOutput.split("\n").map(b => b.trim().replace(/^\* /, "")).filter(Boolean);
+    for (const branch of branches) {
+      console.log(`[worktree] Pruning orphan branch: ${branch}`);
+      await removeWorktreeBranch(repoRoot, branch);
     }
   } catch { /* ignore */ }
 }
