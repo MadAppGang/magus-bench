@@ -2,37 +2,37 @@
 
 **Repository**: /Users/jack/mag/magus-bench
 **Experiment**: tech-writer-quality
-**Loop started**: Thu, 19 Mar 2026 13:39:26 UTC
+**Loop started**: Thu, 19 Mar 2026 20:48:58 UTC
 **Loop config**: loop/config.json
 
 ---
 
 ---
 
-## Iteration 1 — 2026-03-19 13:39:26 UTC
+## Iteration 1 — 2026-03-19 20:48:58 UTC
 
-**Git HEAD at start**: 0e56449
+**Git HEAD at start**: 794e4e4
 **Baseline at start**:
 No baseline available
 
 ### Phase 1: Research
 
-**Agent A**: `★ Insight ─────────────────────────────────────`
+**Agent A**: Now I have enough to produce well-grounded proposals. Let me synthesize what I found:
 Full brief: loop/iteration-1/research/agent-a-brief.md
 
-**Agent B**: [agent error] claude -p exited with code 143. stderr: 
+**Agent B**: `★ Insight ─────────────────────────────────────`
 Full brief: loop/iteration-1/research/agent-b-brief.md
 
-**Agent C**: `★ Insight ─────────────────────────────────────`
+**Agent C**: `★ Coaching ────────────────────────────────────`
 Full brief: loop/iteration-1/research/agent-c-brief.md
 
 ### Phase 2: Plan
 
 | # | Title | Risk | Expected Delta |
 |---|-------|------|----------------|
-| A | Convert single topic to 3-topic array for Friedman statistical validity | medium | medium — `run.sh` and `analyze-results.ts` currently read a single `topic` objec |
-| B | Add calibration anchors, bias warning, and diagrams rubric fix to judge template | low | Inter-judge score SD on `slop` and `writing_craft` expected to decrease from ~1. |
-| C | Replace VS Code reference document with topic-matched Magus documentation | medium | Eliminates the blind-break exploit that currently contaminates all 7 judges. Ref |
+| A | Expand single-topic design to three topics to enable meaningful Friedman statist | medium | `friedman_p` transitions from undefined/NaN (n=1 gives zero degrees of freedom)  |
+| B | Add scoring calibration anchors, count-based slop rubric, criterion-first thinki | low | Score SD per criterion expected to increase from ~0.8 to ~1.5. Inter-judge Kenda |
+| C | Add "Topic Coverage" criterion to surface completeness gaps between approaches | low | `weighted_score` delta between `techwriter` and `default` approaches expected to |
 
 Full plan: loop/iteration-1/plan/plan-summary.md
 
@@ -64,148 +64,6 @@ Full votes: loop/iteration-1/analyze/
 - loop/iter-1/approach-a (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
 - loop/iter-1/approach-b (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
 - loop/iter-1/approach-c (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
-
-### Hypothesis Registry
-
-## Hypothesis History
-
-No resolved hypotheses yet.
-
-
----
-
-## Iteration 2 — 2026-03-19 15:32:19 UTC
-
-**Git HEAD at start**: a6402a4
-**Baseline at start**:
-No baseline available
-
-### Phase 1: Research
-
-**Agent A**: `★ Insight ─────────────────────────────────────`
-Full brief: loop/iteration-2/research/agent-a-brief.md
-
-**Agent B**: `★ Coaching ────────────────────────────────────`
-Full brief: loop/iteration-2/research/agent-b-brief.md
-
-**Agent C**: `★ Insight ─────────────────────────────────────`
-Full brief: loop/iteration-2/research/agent-c-brief.md
-
-### Phase 2: Plan
-
-| # | Title | Risk | Expected Delta |
-|---|-------|------|----------------|
-| A | Replace VS Code reference document with topic-matched Magus reference | medium | `reference` arm `slop` inter-judge stddev drops from ~1.3 to <0.8 (judges no lon |
-| B | Add calibration anchors and anti-leniency self-check to judge template | low | Inter-judge SD on `slop` and `writing_craft` drops from ~1.5 to ~0.8. The Friedm |
-| C | Expand test-cases.json to 3 topics for Friedman statistical validity | medium | With N=3 blocks and 4 treatments, Friedman gains actual degrees of freedom (df=3 |
-
-Full plan: loop/iteration-2/plan/plan-summary.md
-
-### Phase 3: Execute
-
-| Approach | Status | Primary Metrics | Baseline Delta |
-|----------|--------|-----------------|----------------|
-| A | error | — | — |
-| B | error | — | — |
-| C | error | — | — |
-
-Error details (A): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/exec
-Error details (B): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/exec
-Error details (C): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/exec
-Results archived: loop/iteration-2/execute/results/
-
-### Phase 4: Analyze
-
-| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
-|----------|------|------------|--------------|--------------|
-| A | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-a
-stderr:  |
-| B | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-b
-stderr:  |
-| C | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-c
-stderr:  |
-Full votes: loop/iteration-2/analyze/
-
-### Phase 5: Decision
-
-**Dropped**:
-- loop/iter-2/approach-a (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-a
-stderr: )
-- loop/iter-2/approach-b (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-b
-stderr: )
-- loop/iter-2/approach-c (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-c
-stderr: )
-
-### Hypothesis Registry
-
-## Hypothesis History
-
-No resolved hypotheses yet.
-
-
----
-
-## Iteration 3 — 2026-03-19 16:19:29 UTC
-
-**Git HEAD at start**: 4238bf1
-**Baseline at start**:
-No baseline available
-
-### Phase 1: Research
-
-**Agent A**: Now I have everything I need. The data reveals several concrete failure modes to address:
-Full brief: loop/iteration-3/research/agent-a-brief.md
-
-**Agent B**: Now I have everything I need for a thorough analysis. Let me produce the proposals.
-Full brief: loop/iteration-3/research/agent-b-brief.md
-
-**Agent C**: [agent error] claude -p exited with code 143. stderr: 
-Full brief: loop/iteration-3/research/agent-c-brief.md
-
-### Phase 2: Plan
-
-| # | Title | Risk | Expected Delta |
-|---|-------|------|----------------|
-| A | Replace off-topic reference.md with a topic-matched Magus skill injection docume | low | Reference arm `accuracy` +2–3 points (no longer penalized for describing VS Code |
-| B | Add calibration anchors, anti-inflation check, and evidence-first reasoning to j | low | Inter-judge SD on `writing_craft`, `readability`, `structure`, `conciseness`, `d |
-| C | Add loop-topic prompt and reference document as second evaluation topic infrastr | medium | This approach has zero effect on current metrics — `run.sh` continues to read th |
-
-Full plan: loop/iteration-3/plan/plan-summary.md
-
-### Phase 3: Execute
-
-| Approach | Status | Primary Metrics | Baseline Delta |
-|----------|--------|-----------------|----------------|
-| A | error | — | — |
-| B | error | — | — |
-| C | error | — | — |
-
-Error details (A): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/exec
-Error details (B): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/exec
-Error details (C): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/exec
-Results archived: loop/iteration-3/execute/results/
-
-### Phase 4: Analyze
-
-| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
-|----------|------|------------|--------------|--------------|
-| A | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-a
-stderr:  |
-| B | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-b
-stderr:  |
-| C | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-c
-stderr:  |
-Full votes: loop/iteration-3/analyze/
-
-### Phase 5: Decision
-
-**Dropped**:
-- loop/iter-3/approach-a (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-a
-stderr: )
-- loop/iter-3/approach-b (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-b
-stderr: )
-- loop/iter-3/approach-c (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-3-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-3/execute/results/approach-c
-stderr: )
 
 ### Hypothesis Registry
 
