@@ -71,3 +71,74 @@ Full votes: loop/iteration-1/analyze/
 
 No resolved hypotheses yet.
 
+
+---
+
+## Iteration 2 — 2026-03-19 15:32:19 UTC
+
+**Git HEAD at start**: a6402a4
+**Baseline at start**:
+No baseline available
+
+### Phase 1: Research
+
+**Agent A**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-a-brief.md
+
+**Agent B**: `★ Coaching ────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-b-brief.md
+
+**Agent C**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-2/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Risk | Expected Delta |
+|---|-------|------|----------------|
+| A | Replace VS Code reference document with topic-matched Magus reference | medium | `reference` arm `slop` inter-judge stddev drops from ~1.3 to <0.8 (judges no lon |
+| B | Add calibration anchors and anti-leniency self-check to judge template | low | Inter-judge SD on `slop` and `writing_craft` drops from ~1.5 to ~0.8. The Friedm |
+| C | Expand test-cases.json to 3 topics for Friedman statistical validity | medium | With N=3 blocks and 4 treatments, Friedman gains actual degrees of freedom (df=3 |
+
+Full plan: loop/iteration-2/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Error details (A): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/exec
+Error details (B): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/exec
+Error details (C): Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/exec
+Results archived: loop/iteration-2/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
+|----------|------|------------|--------------|--------------|
+| A | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-a
+stderr:  |
+| B | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-b
+stderr:  |
+| C | drop | high | yes | Implementation failed: Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-c
+stderr:  |
+Full votes: loop/iteration-2/analyze/
+
+### Phase 5: Decision
+
+**Dropped**:
+- loop/iter-2/approach-a (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-a/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-a
+stderr: )
+- loop/iter-2/approach-b (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-b/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-b
+stderr: )
+- loop/iter-2/approach-c (Process idle-killed after 600s of no output: bash /tmp/magus-bench-loop/iteration-2-approach-c/tech-writer-eval/run.sh --compare-baseline --output-dir /Users/jack/mag/magus-bench/loop/iteration-2/execute/results/approach-c
+stderr: )
+
+### Hypothesis Registry
+
+## Hypothesis History
+
+No resolved hypotheses yet.
+
