@@ -136,3 +136,68 @@ Full votes: loop/iteration-2/analyze/
 
 No resolved hypotheses yet.
 
+
+---
+
+## Iteration 3 — 2026-03-19 21:45:31 UTC
+
+**Git HEAD at start**: b87d838
+**Baseline at start**:
+No baseline available
+
+### Phase 1: Research
+
+**Agent A**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-a-brief.md
+
+**Agent B**: [agent error] claude -p exited with code 143. stderr: 
+Full brief: loop/iteration-3/research/agent-b-brief.md
+
+**Agent C**: [agent error] claude -p exited with code 143. stderr: 
+Full brief: loop/iteration-3/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Risk | Expected Delta |
+|---|-------|------|----------------|
+| A | (no title) | unknown | (see approach doc) |
+| B | (no title) | unknown | (see approach doc) |
+| C | (no title) | unknown | (see approach doc) |
+
+Full plan: loop/iteration-3/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Error details (A): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Error details (B): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Error details (C): run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: 
+Results archived: loop/iteration-3/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
+|----------|------|------------|--------------|--------------|
+| A | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+| B | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+| C | drop | high | yes | Implementation failed: run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr:  |
+Full votes: loop/iteration-3/analyze/
+
+### Phase 5: Decision
+
+**Dropped**:
+- loop/iter-3/approach-a (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+- loop/iter-3/approach-b (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+- loop/iter-3/approach-c (run.sh failed (exit code 143 (SIGTERM — likely idle timeout)). stderr: )
+
+### Hypothesis Registry
+
+## Hypothesis History
+
+No resolved hypotheses yet.
+
