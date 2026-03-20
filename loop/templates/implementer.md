@@ -65,13 +65,18 @@ The eval harness (run.sh, promptfoo, etc.) is a FIXED pipeline. You MUST NOT:
 - Change how judges are invoked or how their responses are parsed
 - Add new dependencies or tools that the pipeline doesn't already have
 
-You CAN:
-- Change the CONTENT of prompt files (wording, criteria descriptions, instructions)
-- Change the CONTENT of test-cases.json/yaml (add topics, modify criteria weights, update model IDs)
-- Change reference documents (swap or improve reference content)
-- Add new prompt files IF the pipeline already supports loading them (check the config)
+You MUST NOT change the STRUCTURE of JSON/YAML config files:
+- In test-cases.json: do NOT rename keys (e.g. "topic" → "topics"), do NOT change nesting depth, do NOT convert objects to arrays. The pipeline parses these with exact jq paths like `.topic.title`.
+- In promptfooconfig.yaml: do NOT change the top-level keys or test case format.
+- BEFORE modifying any config file, READ the eval harness script (run.sh or promptfooconfig.yaml) to see which fields it reads and how.
 
-When in doubt, read the eval harness scripts to understand what the pipeline expects before making changes.
+You CAN:
+- Change VALUES within existing JSON/YAML fields (new topic title, different weights, updated model IDs)
+- Change the CONTENT of prompt files (wording, criteria descriptions, instructions)
+- Change reference documents (swap or improve reference content)
+- Add new entries within existing arrays (e.g. add a judge to the judges array)
+
+When in doubt, read the eval harness scripts first. Run `grep -n "jq\|yq" run.sh` to see what fields the pipeline reads.
 
 ## Completion
 

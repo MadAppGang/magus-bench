@@ -35,8 +35,9 @@ export class RegressionError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Idle-watchdog shell spawner
-// (copied from loop/phases/phase-3-execute.ts spawnShell pattern)
+// Simple shell spawner — no idle timeout for eval runs.
+// Eval pipelines (run.sh) legitimately run 20-40 minutes with long silent
+// gaps between subprocess calls. The STOP sentinel is the abort mechanism.
 // ---------------------------------------------------------------------------
 
 interface ShellResult {
@@ -45,74 +46,23 @@ interface ShellResult {
   stderr: string;
 }
 
-const IDLE_TIMEOUT_MS = 45 * 60 * 1000; // 45 min — eval runs 4 sequential generations + 7 parallel judges, each step can take 3-8 min with no stdout
-
 async function spawnShell(
   args: string[],
   options: {
     cwd?: string;
     allowFailure?: boolean;
     env?: Record<string, string | undefined>;
-    idleTimeout?: number;
   } = {}
 ): Promise<ShellResult> {
   const proc = Bun.spawn(args, {
     cwd: options.cwd ?? REPO_ROOT,
-    stdout: "pipe",
+    stdout: "inherit",  // stream to parent terminal for visibility
     stderr: "pipe",
     env: options.env as Record<string, string> | undefined,
   });
 
-  const idleMs = options.idleTimeout ?? IDLE_TIMEOUT_MS;
-  let lastActivity = Date.now();
-  let idleKilled = false;
-
-  const watchdog = setInterval(() => {
-    if (Date.now() - lastActivity > idleMs) {
-      idleKilled = true;
-      const idleSec = Math.round((Date.now() - lastActivity) / 1000);
-      console.error(
-        `[watchdog] No output for ${idleSec}s — killing: ${args.slice(0, 3).join(" ")}`
-      );
-      proc.kill("SIGTERM");
-      clearInterval(watchdog);
-    }
-  }, 30_000);
-
-  const stdoutChunks: string[] = [];
-  const stderrChunks: string[] = [];
-
-  const readStream = async (
-    stream: ReadableStream<Uint8Array> | null,
-    chunks: string[]
-  ): Promise<void> => {
-    if (!stream) return;
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      lastActivity = Date.now();
-      chunks.push(decoder.decode(value, { stream: true }));
-    }
-  };
-
-  await Promise.all([
-    readStream(proc.stdout as ReadableStream<Uint8Array>, stdoutChunks),
-    readStream(proc.stderr as ReadableStream<Uint8Array>, stderrChunks),
-  ]);
-
+  const stderr = await new Response(proc.stderr).text();
   const code = await proc.exited;
-  clearInterval(watchdog);
-
-  const stdout = stdoutChunks.join("");
-  const stderr = stderrChunks.join("");
-
-  if (idleKilled) {
-    throw new Error(
-      `Process idle-killed after ${idleMs / 1000}s of no output: ${args.join(" ")}\nstderr: ${stderr.slice(0, 500)}`
-    );
-  }
 
   if (code !== 0 && !options.allowFailure) {
     throw new Error(
@@ -120,7 +70,7 @@ async function spawnShell(
     );
   }
 
-  return { code, stdout, stderr };
+  return { code, stdout: "", stderr };
 }
 
 // ---------------------------------------------------------------------------
