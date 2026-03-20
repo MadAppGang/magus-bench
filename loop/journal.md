@@ -136,3 +136,68 @@ Full votes: loop/iteration-2/analyze/
 
 No resolved hypotheses yet.
 
+
+---
+
+## Iteration 3 — 2026-03-20 13:22:03 UTC
+
+**Git HEAD at start**: 1917de6
+**Baseline at start**:
+No baseline available
+
+### Phase 1: Research
+
+**Agent A**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-a-brief.md
+
+**Agent B**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-b-brief.md
+
+**Agent C**: `★ Insight ─────────────────────────────────────`
+Full brief: loop/iteration-3/research/agent-c-brief.md
+
+### Phase 2: Plan
+
+| # | Title | Risk | Expected Delta |
+|---|-------|------|----------------|
+| A | Expand to 4 Topics and Fix Judge Panel Model IDs | medium | `friedman_p` transitions from degenerate (df=0, uncomputable) to interpretable ( |
+| B | Add Mid-Range Score Anchors and Slop Calibration Specimens to Judge Template | low | Inter-judge score standard deviation on the five affected criteria expected to d |
+| C | Add `code_examples` Criterion to Evaluate Primary Techwriter Differentiator | low | +0.10–0.20 weighted_score delta between `techwriter` and `default` on the new cr |
+
+Full plan: loop/iteration-3/plan/plan-summary.md
+
+### Phase 3: Execute
+
+| Approach | Status | Primary Metrics | Baseline Delta |
+|----------|--------|-----------------|----------------|
+| A | error | — | — |
+| B | error | — | — |
+| C | error | — | — |
+
+Error details (A): IDLE_TIMEOUT_MS is not defined
+Error details (B): IDLE_TIMEOUT_MS is not defined
+Error details (C): IDLE_TIMEOUT_MS is not defined
+Results archived: loop/iteration-3/execute/results/
+
+### Phase 4: Analyze
+
+| Approach | Vote | Confidence | Auto-dropped | Key Concerns |
+|----------|------|------------|--------------|--------------|
+| A | drop | high | yes | Implementation failed: IDLE_TIMEOUT_MS is not defined |
+| B | drop | high | yes | Implementation failed: IDLE_TIMEOUT_MS is not defined |
+| C | drop | high | yes | Implementation failed: IDLE_TIMEOUT_MS is not defined |
+Full votes: loop/iteration-3/analyze/
+
+### Phase 5: Decision
+
+**Dropped**:
+- loop/iter-3/approach-a (IDLE_TIMEOUT_MS is not defined)
+- loop/iter-3/approach-b (IDLE_TIMEOUT_MS is not defined)
+- loop/iter-3/approach-c (IDLE_TIMEOUT_MS is not defined)
+
+### Hypothesis Registry
+
+## Hypothesis History
+
+No resolved hypotheses yet.
+
