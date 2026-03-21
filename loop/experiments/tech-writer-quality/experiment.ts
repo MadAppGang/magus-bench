@@ -168,7 +168,6 @@ const plugin = {
         cwd: worktreePath,
         allowFailure: true,
         env,
-        idleTimeout: IDLE_TIMEOUT_MS,
       }
     );
 
