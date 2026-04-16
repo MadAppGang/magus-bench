@@ -14,16 +14,17 @@
     "plugin-dev@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true
+    "skill-creator@claude-plugins-official": true,
+    "kanban@magus": true
   },
   "installedPluginVersions": {
-    "code-analysis@magus": "4.0.3",
-    "multimodel@magus": "2.8.0",
-    "agentdev@magus": "1.5.5",
-    "dev@magus": "1.41.0",
-    "statusline@magus": "1.4.1",
-    "browser-use@magus": "1.0.2",
-    "terminal@magus": "2.1.0",
+    "code-analysis@magus": "5.1.0",
+    "multimodel@magus": "3.1.2",
+    "agentdev@magus": "1.6.1",
+    "dev@magus": "2.7.0",
+    "statusline@magus": "2.1.0",
+    "browser-use@magus": "1.1.1",
+    "terminal@magus": "4.0.2",
     "typescript-lsp@claude-plugins-official": "1.0.0",
     "code-simplifier@claude-plugins-official": "0.0.0",
     "explanatory-output-style@claude-plugins-official": "0.0.0",
@@ -31,6 +32,7 @@
     "plugin-dev@claude-plugins-official": "0.0.0",
     "claude-code-setup@claude-plugins-official": "0.0.0",
     "claude-md-management@claude-plugins-official": "0.0.0",
-    "skill-creator@claude-plugins-official": "0.0.0"
+    "skill-creator@claude-plugins-official": "0.0.0",
+    "kanban@magus": "1.3.0"
   }
 }
