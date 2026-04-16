@@ -9,8 +9,14 @@ node_modules/
 .claude/skills/*/evals/
 .claudemem/
 ai-docs/sessions/
-loop/STALLED
-loop/iteration-*/
-loop/state.json
-tech-writer-eval/.claude/
-tech-writer-eval/results/
+
+# Platform (autonomous experiment orchestrator)
+platform/STALLED
+platform/LOCK
+platform/STOP
+platform/state.json
+platform/runs/
+
+# Benchmarks (eval harness outputs)
+benchmarks/tech-writer/.claude/
+benchmarks/tech-writer/results/

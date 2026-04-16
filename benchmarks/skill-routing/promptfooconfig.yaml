@@ -1,0 +1,65 @@
+# benchmarks/skill-routing/promptfooconfig.yaml
+#
+# Promptfoo evaluation for Magus skill routing.
+#
+# What it tests:
+#   1. Skill-tool vs Task-tool disambiguation — skills must be invoked via the
+#      Skill tool, never as a Task subagent_type.
+#   2. Routing-table honoring — CLAUDE.md passive routing entries must direct
+#      complex tasks to the right specialist agent.
+#   3. Spelling correctness — Bash commands after skill loading must spell tool
+#      names (e.g. "claudemem") without typos.
+#   4. Direct handling — trivially simple tasks must not incur unnecessary
+#      agent delegation.
+#
+# Run:
+#   npx promptfoo eval -c promptfooconfig.yaml
+#   npx promptfoo view
+#
+# Reference: https://www.promptfoo.dev/docs/configuration/guide
+
+description: "Magus skill routing — Skill tool vs Task tool disambiguation and CLAUDE.md routing table"
+
+# ---------------------------------------------------------------------------
+# Providers — models under test
+# ---------------------------------------------------------------------------
+providers:
+  - id: anthropic:messages:claude-sonnet-4-6
+    label: "Claude Sonnet 4.6"
+    config:
+      max_tokens: 2048
+
+  - id: anthropic:messages:claude-haiku-4-5-20251001
+    label: "Claude Haiku 4.5"
+    config:
+      max_tokens: 2048
+
+# ---------------------------------------------------------------------------
+# Prompts — simple passthrough; all variation lives in test-cases.yaml
+# ---------------------------------------------------------------------------
+prompts:
+  - id: skill-routing-prompt
+    label: "Skill Routing Test"
+    raw: "{{prompt}}"
+
+# ---------------------------------------------------------------------------
+# Default assertion settings
+# ---------------------------------------------------------------------------
+defaultTest:
+  options:
+    # Give the LLM-rubric judge enough room to reason
+    provider: anthropic:messages:claude-sonnet-4-6
+
+# ---------------------------------------------------------------------------
+# Test cases (external file)
+# ---------------------------------------------------------------------------
+tests: file://test-cases.yaml
+
+# ---------------------------------------------------------------------------
+# Output / sharing
+# ---------------------------------------------------------------------------
+outputPath: results/latest.json
+
+sharing:
+  # Set to true to enable promptfoo cloud sharing
+  enabled: false

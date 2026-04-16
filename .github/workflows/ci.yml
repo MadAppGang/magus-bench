@@ -26,13 +26,13 @@ jobs:
         run: sudo apt-get install -y shellcheck
 
       - name: Check TypeScript compiles (analyze-results.ts)
-        run: bun build --no-bundle tech-writer-eval/analyze-results.ts --outdir /tmp/ts-check
+        run: bun build --no-bundle benchmarks/tech-writer/analyze-results.ts --outdir /tmp/ts-check
 
       - name: Shellcheck run.sh
-        run: shellcheck tech-writer-eval/run.sh
+        run: shellcheck benchmarks/tech-writer/run.sh
 
       - name: Shellcheck execute-test.sh
-        run: shellcheck tech-writer-eval/execute-test.sh
+        run: shellcheck benchmarks/tech-writer/execute-test.sh
 
   # ---------------------------------------------------------------------------
   # Job 2: Dry-Run Validation
@@ -70,16 +70,16 @@ jobs:
           sudo chmod +x /usr/local/bin/claudish
 
       - name: Run pipeline dry-run
-        run: ./tech-writer-eval/run.sh --dry-run
+        run: ./benchmarks/tech-writer/run.sh --dry-run
 
       - name: Validate test-cases.json — top-level keys present
         run: |
-          jq -e 'type == "object"' tech-writer-eval/test-cases.json
-          jq -e '.topic | type == "object"' tech-writer-eval/test-cases.json
-          jq -e '.approaches | type == "array" and length > 0' tech-writer-eval/test-cases.json
-          jq -e '.evaluation.criteria | type == "array" and length > 0' tech-writer-eval/test-cases.json
-          jq -e '.judges | type == "array" and length > 0' tech-writer-eval/test-cases.json
-          jq -e '.thresholds | type == "object"' tech-writer-eval/test-cases.json
+          jq -e 'type == "object"' benchmarks/tech-writer/test-cases.json
+          jq -e '.topic | type == "object"' benchmarks/tech-writer/test-cases.json
+          jq -e '.approaches | type == "array" and length > 0' benchmarks/tech-writer/test-cases.json
+          jq -e '.evaluation.criteria | type == "array" and length > 0' benchmarks/tech-writer/test-cases.json
+          jq -e '.judges | type == "array" and length > 0' benchmarks/tech-writer/test-cases.json
+          jq -e '.thresholds | type == "object"' benchmarks/tech-writer/test-cases.json
 
       - name: Validate test-cases.json — criteria have required fields
         run: |
@@ -88,7 +88,7 @@ jobs:
               . | has("id") and has("name") and has("weight") and has("description")
               and (.weight | type == "number")
             )
-          ' tech-writer-eval/test-cases.json
+          ' benchmarks/tech-writer/test-cases.json
 
       - name: Validate test-cases.json — judges have required fields
         run: |
@@ -96,12 +96,12 @@ jobs:
             .judges | all(
               . | has("id") and has("model") and has("method")
             )
-          ' tech-writer-eval/test-cases.json
+          ' benchmarks/tech-writer/test-cases.json
 
       - name: Validate test-cases.json — total_weight is a positive number
         run: |
           jq -e '.evaluation.total_weight | type == "number" and . > 0' \
-            tech-writer-eval/test-cases.json
+            benchmarks/tech-writer/test-cases.json
 
   # ---------------------------------------------------------------------------
   # Job 3: Promptfoo Config Validation
@@ -125,12 +125,12 @@ jobs:
         run: npm install -g promptfoo
 
       - name: Validate promptfoo config
-        run: promptfoo validate config -c skill-routing-eval/promptfooconfig.yaml
+        run: promptfoo validate config -c benchmarks/skill-routing/promptfooconfig.yaml
 
       - name: Verify test-cases.yaml has 20+ cases with assertions
         run: |
           # Convert YAML to JSON via promptfoo's bundled js-yaml, then validate
-          npx js-yaml skill-routing-eval/test-cases.yaml > /tmp/test-cases.json
+          npx js-yaml benchmarks/skill-routing/test-cases.yaml > /tmp/test-cases.json
           node -e "
             const cases = require('/tmp/test-cases.json');
             if (!Array.isArray(cases)) throw new Error('Expected array');
@@ -142,9 +142,9 @@ jobs:
 
       - name: Verify generated test-cases structure (if present)
         run: |
-          if [ -f skill-routing-eval/generated/test-cases-generated.json ]; then
+          if [ -f benchmarks/skill-routing/generated/test-cases-generated.json ]; then
             node -e "
-              const data = require('./skill-routing-eval/generated/test-cases-generated.json');
+              const data = require('./benchmarks/skill-routing/generated/test-cases-generated.json');
               if (!Array.isArray(data.test_cases)) throw new Error('Invalid structure');
               console.log('generated: ' + data.test_cases.length + ' cases');
             "
@@ -153,7 +153,7 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Job 4: Analyze Existing Results (tech-writer-eval)
+  # Job 4: Analyze Existing Results (benchmarks/tech-writer)
   # Runs analyze-results.ts against the committed results directory (if any)
   # to confirm the analyzer doesn't crash on real data.
   # No API keys needed — this only reads static files.
@@ -172,7 +172,7 @@ jobs:
       - name: Find latest result run
         id: find-run
         run: |
-          LATEST=$(ls -dt tech-writer-eval/results/run-* 2>/dev/null | head -1)
+          LATEST=$(ls -dt benchmarks/tech-writer/results/run-* 2>/dev/null | head -1)
           if [[ -n "$LATEST" && -f "$LATEST/sample-mapping.json" ]]; then
             echo "run_dir=$LATEST" >> "$GITHUB_OUTPUT"
             echo "has_results=true" >> "$GITHUB_OUTPUT"
@@ -185,4 +185,4 @@ jobs:
       - name: Run analyzer on existing results
         if: steps.find-run.outputs.has_results == 'true'
         run: |
-          bun tech-writer-eval/analyze-results.ts "${{ steps.find-run.outputs.run_dir }}"
+          bun benchmarks/tech-writer/analyze-results.ts "${{ steps.find-run.outputs.run_dir }}"

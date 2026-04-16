@@ -6,31 +6,36 @@ Benchmarks and autonomous experiment platform for the Magus plugin ecosystem.
 
 ```
 magus-bench/
-  loop/                           # Experiment platform (Bun TypeScript)
-    loop.ts                       # Main orchestrator
+  platform/                       # Autonomous experiment orchestrator (Bun TypeScript)
+    loop.ts                       # Main entry point
     config.json                   # Active experiment + settings
-    engine/                       # Generic engine (never experiment-specific)
+    engine/                       # Generic engine (never benchmark-specific)
       types.ts                    # Experiment interface, Metrics, Hypothesis
       plugin-registry.ts          # Loads experiment plugins
       hypothesis.ts               # Hypothesis tracking (append-only JSONL)
       diff-verifier.ts            # Variable isolation enforcement
       decision.ts                 # Generic keep/drop logic
       journal.ts                  # Journal entry builder
-    experiments/                  # One TypeScript plugin per experiment
-      tech-writer-quality/        # Doc quality improvement via prompt/rubric iteration
+    plugins/                      # One TypeScript plugin per experiment
+      tech-writer-quality/        # Doc quality via prompt/rubric iteration
       agent-routing/              # Skill/agent routing correctness
     phases/                       # 6 generic phase scripts (research → journal)
     templates/                    # Agent prompt templates with {{VAR}} placeholders
     lib/                          # Utilities: agent spawn, worktree, state
-  tech-writer-eval/               # Eval harness: 4-way blind doc comparison
-    run.sh                        # Entry point: generate → judge → analyze
-    analyze-results.ts            # Bun: Borda count, Friedman, bootstrap CI
-    test-cases.json               # Topic, judges, criteria (9 criteria, 14 total weight)
-    prompts/                      # Generation + judge templates
-    baselines/latest/             # Regression baseline (scores.json)
-  skill-routing-eval/             # Eval harness: promptfoo skill routing
-    promptfooconfig.yaml          # 2 models, 22 test cases
-    test-cases.yaml               # 11 routing categories
+    runs/                         # Iteration outputs (gitignored)
+  benchmarks/                     # Eval harnesses — each runnable standalone
+    tech-writer/                  # 4-way blind doc comparison
+      run.sh                      # generate → judge → analyze
+      analyze-results.ts          # Bun: Borda, Friedman, bootstrap CI
+      test-cases.json, prompts/, reference/, baselines/
+    skill-routing/                # promptfoo skill-routing correctness
+      promptfooconfig.yaml, test-cases.yaml, prompts/
+  experiments/                    # Structured investigations
+  poc/                            # Quick spikes and proofs of concept
+  archive/                        # Completed work (preserved for reference)
+    claude-md-routing-2026-03/    # Legacy manual CLAUDE.md hypothesis tests
+  docs/                           # Architecture, testing, contribution guides
+  ai-docs/                        # AI working files (gitignored)
 ```
 
 ## Runtime
@@ -42,27 +47,30 @@ magus-bench/
 
 ## Key conventions
 
-- Experiment plugins implement the `Experiment` interface from `loop/engine/types.ts`
-- Adding a new experiment: write `loop/experiments/<name>/experiment.ts`, register in `plugin-registry.ts`, set `experiment_id` in `config.json`
-- Phase scripts communicate only through the filesystem (`loop/iteration-N/<phase>/`)
+- Experiment plugins implement the `Experiment` interface from `platform/engine/types.ts`
+- Adding a new experiment plugin: write `platform/plugins/<name>/experiment.ts`, register in `plugin-registry.ts`, set `experiment_id` in `platform/config.json`
+- Adding a new benchmark: create `benchmarks/<name>/` with a `run.sh` entry point and (optionally) a plugin under `platform/plugins/` that wraps it
+- Adding a PoC: drop it in `poc/<name>/` with a README. Graduates to `benchmarks/` if it proves out, or to `archive/` if wound down
+- Adding an experiment: create `experiments/<name>-YYYY-MM/` with a README stating the question, methodology, and (once done) findings
+- Phase scripts communicate only through the filesystem (`platform/runs/iteration-N/<phase>/`)
 - Each phase checks sentinel files for idempotency (skip if output exists)
 - Decision logic (keep/drop) is deterministic TypeScript in plugins, not LLM reasoning
 - Git worktrees at `/tmp/magus-bench-loop/` for isolation
-- Hypothesis tracking in `loop/hypotheses.jsonl` (append-only)
+- Hypothesis tracking in `platform/hypotheses.jsonl` (append-only)
 
 ## Running the experiment loop
 
 ```bash
-bun loop/loop.ts --runs 5           # run 5 iterations
-bun loop/loop.ts --runs 1 --dry-run # dry-run (no API calls)
-bun loop/loop.ts                    # infinite (stop: touch loop/STOP)
+bun platform/loop.ts --runs 5           # run 5 iterations
+bun platform/loop.ts --runs 1 --dry-run # dry-run (no API calls)
+bun platform/loop.ts                    # infinite (stop: touch platform/STOP)
 ```
 
-## Running evals directly
+## Running benchmarks directly
 
 ```bash
-cd tech-writer-eval && ./run.sh                                              # tech-writer
-npx promptfoo eval -c skill-routing-eval/promptfooconfig.yaml                # skill-routing
+cd benchmarks/tech-writer && ./run.sh                                   # tech-writer
+npx promptfoo eval -c benchmarks/skill-routing/promptfooconfig.yaml    # skill-routing
 ```
 
 ## Session directories

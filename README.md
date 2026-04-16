@@ -1,51 +1,45 @@
 # Magus Bench
 
-Benchmarks and an autonomous experiment platform for the [Magus](https://github.com/MadAppGang/claude-code) plugin ecosystem.
+Benchmarks and an autonomous experiment platform for the [Magus](https://github.com/MadAppGang/claude-code) Claude Code plugin ecosystem.
 
-## Experiment platform
+## Repository layout
 
-The [experiment loop](./loop/) proposes improvements, tests them in isolated git worktrees, and merges what works. Each experiment is a TypeScript plugin — add a new one by writing a single file.
+| Directory | Purpose |
+|---|---|
+| [`platform/`](./platform/) | Autonomous experiment orchestrator. Proposes hypotheses, runs them in parallel git worktrees, measures against a baseline, and merges what works. |
+| [`benchmarks/`](./benchmarks/) | Self-contained eval harnesses. Each measures one thing (doc quality, skill routing) and is runnable directly. |
+| [`experiments/`](./experiments/) | Structured investigations. Have a stated methodology and produce findings. |
+| [`poc/`](./poc/) | Quick spikes and proofs of concept. "Does this even work?" One-off tests, often throwaway. |
+| [`docs/`](./docs/) | Architecture, testing guide, contribution tutorials. |
+| [`archive/`](./archive/) | Completed work preserved for reference. |
+
+## Quick start
 
 ```bash
-bun loop/loop.ts --runs 5           # run 5 iterations
-bun loop/loop.ts --runs 1 --dry-run # preview without API calls
-touch loop/STOP                      # stop after current phase
+# Run a benchmark directly (fastest)
+cd benchmarks/skill-routing && npx promptfoo eval -c promptfooconfig.yaml
+
+# Run the autonomous experiment loop
+bun platform/loop.ts --runs 5           # 5 iterations
+bun platform/loop.ts --runs 1 --dry-run # preview without API calls
 ```
 
-See [loop/README.md](./loop/README.md) for the full guide including how to write new experiment plugins.
+See [`docs/architecture.md`](./docs/architecture.md) for the three-layer measurement story and how `platform/` drives `benchmarks/`.
 
-### Experiments
+## Adding to the repo
 
-| Experiment | Plugin | Description |
-|------------|--------|-------------|
-| [tech-writer-quality](./loop/experiments/tech-writer-quality/) | `experiment.ts` | Improve documentation quality via prompt/rubric iteration. 4-way blind comparison, 7-model judge panel, Borda + Friedman statistics. |
-| [agent-routing](./loop/experiments/agent-routing/) | `experiment.ts` | Improve Claude Code skill/agent routing correctness. Promptfoo benchmark, 22 test cases across 11 routing categories. |
-
-## Eval harnesses
-
-Each eval harness runs independently and is also callable by the experiment loop.
-
-| Eval | Entry point | Description |
-|------|-------------|-------------|
-| [tech-writer-eval](./tech-writer-eval/) | `run.sh` | 4-way blind doc quality comparison: human reference vs bare Claude vs Claude+anti-slop vs Gemini Flash, judged by 7-model panel |
-| [skill-routing-eval](./skill-routing-eval/) | `promptfooconfig.yaml` | Promptfoo benchmark testing Skill-tool vs Task-tool disambiguation, routing-table honoring, and spelling correctness |
+- **New PoC** (quick spike, unknown if worth formalizing): [`poc/README.md`](./poc/README.md)
+- **New experiment** (structured investigation): [`experiments/README.md`](./experiments/README.md)
+- **New benchmark** (formal, repeatable measurement): [`docs/adding-a-benchmark.md`](./docs/adding-a-benchmark.md)
+- **New experiment plugin** (drive an existing benchmark autonomously): [`docs/adding-an-experiment.md`](./docs/adding-an-experiment.md)
+- **Glossary** (benchmark vs experiment vs PoC vs eval): [`docs/glossary.md`](./docs/glossary.md)
 
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (`claude`)
 - [claudish](https://github.com/MadAppGang/claudish) CLI (`npm install -g claudish`)
-- [Bun](https://bun.sh/) runtime (for TypeScript)
-- OpenRouter API key (for external model judges)
-
-## Running an eval directly
-
-```bash
-cd tech-writer-eval
-./run.sh              # full run: generate → judge → analyze
-./run.sh --dry-run    # preview without API calls
-```
-
-Results land in `results/run-YYYYMMDD-HHMMSS/` with a markdown report.
+- [Bun](https://bun.sh/) runtime
+- OpenRouter API key (for external judge models)
 
 ## License
 
